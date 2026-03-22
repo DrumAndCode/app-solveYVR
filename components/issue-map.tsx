@@ -70,7 +70,7 @@ export function IssueMap() {
   );
   const [reportPinAddress, setReportPinAddress] = useState<string | null>(null);
   const [reverseGeocoding, setReverseGeocoding] = useState(false);
-  const [showReportPopup, setShowReportPopup] = useState(false);
+  const [showReportPopup, setShowReportPopup] = useState(true);
 
   // Reverse geocode whenever the report pin moves
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -169,6 +169,13 @@ export function IssueMap() {
     [updateView]
   );
 
+  // Padding to offset for the right sidebar so pins appear visually centered
+  const sidebarPadding = useMemo(() => {
+    if (typeof window === "undefined") return { right: 0 };
+    // md+ has sidebar; mobile doesn't
+    return window.innerWidth >= 768 ? { right: 500 } : { right: 0 };
+  }, []);
+
   // Auto-center on user location once
   useEffect(() => {
     if (userLocation && !didCenterOnUser.current) {
@@ -177,9 +184,10 @@ export function IssueMap() {
         center: [userLocation.lng, userLocation.lat],
         zoom: 14,
         duration: 1000,
+        padding: sidebarPadding,
       });
     }
-  }, [userLocation]);
+  }, [userLocation, sidebarPadding]);
 
   useEffect(() => {
     if (pendingFocus) {
@@ -187,6 +195,7 @@ export function IssueMap() {
         center: [pendingFocus.lng, pendingFocus.lat],
         zoom: 16,
         duration: 1200,
+        padding: sidebarPadding,
       });
       setSelected(pendingFocus);
       clearFocus();
@@ -198,7 +207,7 @@ export function IssueMap() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 15 });
+        mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 15, padding: sidebarPadding });
         updateReportPin(loc.lat, loc.lng);
       },
       () => {

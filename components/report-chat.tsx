@@ -127,23 +127,27 @@ function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
       {steps.map((step, i) => (
         <div
           key={`${step.name}-${i}`}
-          className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 max-w-[85%] text-xs"
+          className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2 max-w-[85%] text-xs"
         >
-          {step.status === "running" && (
-            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-          )}
-          {step.status === "ok" && (
-            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-          )}
-          {step.status === "error" && (
-            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
-          )}
-          <span className="font-medium">{step.label}</span>
-          {step.detail && (
-            <span className="truncate text-muted-foreground">
-              · {step.detail}
-            </span>
-          )}
+          <div className="mt-0.5 shrink-0">
+            {step.status === "running" && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            )}
+            {step.status === "ok" && (
+              <Check className="h-3.5 w-3.5 text-emerald-600" />
+            )}
+            {step.status === "error" && (
+              <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="font-medium">{step.label}</span>
+            {step.detail && (
+              <span className="text-muted-foreground truncate">
+                {step.detail}
+              </span>
+            )}
+          </div>
         </div>
       ))}
     </div>
