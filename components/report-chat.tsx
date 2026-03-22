@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, FormEvent } from "react";
+import { useState, useCallback, useEffect, useRef, FormEvent } from "react";
 import { X, Camera, Mic, Paperclip, MapPin, Loader2 } from "lucide-react";
 import {
   Conversation,
@@ -56,6 +56,75 @@ function nextId() {
   return String(++msgId);
 }
 
+// ── Streaming text hook ────────────────────────────────────────────
+
+const STREAM_SPEED = 18; // ms per character
+
+function useStreamedText(fullText: string, enabled: boolean) {
+  const [displayed, setDisplayed] = useState(enabled ? "" : fullText);
+  const [done, setDone] = useState(!enabled);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    if (!enabled) {
+      setDisplayed(fullText);
+      setDone(true);
+      return;
+    }
+    setDisplayed("");
+    setDone(false);
+    indexRef.current = 0;
+
+    const interval = setInterval(() => {
+      indexRef.current += 1;
+      if (indexRef.current >= fullText.length) {
+        setDisplayed(fullText);
+        setDone(true);
+        clearInterval(interval);
+      } else {
+        setDisplayed(fullText.slice(0, indexRef.current));
+      }
+    }, STREAM_SPEED);
+
+    return () => clearInterval(interval);
+  }, [fullText, enabled]);
+
+  return { displayed, done };
+}
+
+// ── Streaming message wrapper ──────────────────────────────────────
+
+function StreamingMessage({
+  msg,
+  isLatest,
+  onStreamDone,
+}: {
+  msg: ChatMsg;
+  isLatest: boolean;
+  onStreamDone?: () => void;
+}) {
+  const shouldStream = msg.role === "assistant" && isLatest && msg.text.length > 0;
+  const { displayed, done } = useStreamedText(msg.text, shouldStream);
+  const calledRef = useRef(false);
+
+  useEffect(() => {
+    if (done && shouldStream && onStreamDone && !calledRef.current) {
+      calledRef.current = true;
+      onStreamDone();
+    }
+  }, [done, shouldStream, onStreamDone]);
+
+  if (!msg.text) return null;
+
+  return (
+    <Message from={msg.role}>
+      <MessageContent>
+        <MessageResponse>{displayed}</MessageResponse>
+      </MessageContent>
+    </Message>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────
 
 export function ReportChat({ onClose }: { onClose: () => void }) {
@@ -75,9 +144,18 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
   ]);
   const [input, setInput] = useState("");
   const [photoCount, setPhotoCount] = useState(0);
+  const [streaming, setStreaming] = useState(false);
 
   const push = useCallback((...msgs: Omit<ChatMsg, "id">[]) => {
+    // If any assistant message is being added, mark streaming
+    if (msgs.some((m) => m.role === "assistant" && m.text)) {
+      setStreaming(true);
+    }
     setMessages((prev) => [...prev, ...msgs.map((m) => ({ ...m, id: nextId() }))]);
+  }, []);
+
+  const onStreamDone = useCallback(() => {
+    setStreaming(false);
   }, []);
 
   // ── Suggestion handler ────────────────────────────────────────
@@ -202,16 +280,19 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
     [step]
   );
 
-  // ── Last message's suggestions (only show on the latest) ──────
+  // ── Derived state ─────────────────────────────────────────────
 
   const lastMsg = messages[messages.length - 1];
   const activeSuggestions =
-    lastMsg?.suggestions && step !== "processing" && step !== "done"
+    lastMsg?.suggestions &&
+    step !== "processing" &&
+    step !== "done" &&
+    !streaming
       ? lastMsg.suggestions
       : null;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
@@ -228,132 +309,138 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
 
       {/* Messages — AI Elements Conversation */}
       <Conversation className="flex-1">
-        <ConversationContent className="gap-4 px-4 py-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className="flex flex-col gap-2">
-              {/* Text message */}
-              {msg.text && (
-                <Message from={msg.role}>
-                  <MessageContent>
-                    <MessageResponse>{msg.text}</MessageResponse>
-                  </MessageContent>
-                </Message>
-              )}
+        <ConversationContent className="gap-4 px-4 pt-4 pb-48">
+          {messages.map((msg, i) => {
+            const isLatest = i === messages.length - 1;
+            return (
+              <div key={msg.id} className="flex flex-col gap-2">
+                {/* Text message with streaming */}
+                {msg.text && (
+                  <StreamingMessage
+                    msg={msg}
+                    isLatest={isLatest}
+                    onStreamDone={isLatest ? onStreamDone : undefined}
+                  />
+                )}
 
-              {/* Processing spinner */}
-              {step === "processing" &&
-                msg === lastMsg &&
-                msg.role === "assistant" && (
-                  <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Classifying issue...
+                {/* Processing spinner */}
+                {step === "processing" &&
+                  isLatest &&
+                  msg.role === "assistant" && (
+                    <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Classifying issue...
+                    </div>
+                  )}
+
+                {/* Report preview card */}
+                {msg.showPreview && (
+                  <div className="max-w-[95%]">
+                    <ReportPreview
+                      category={MOCK_REPORT.category}
+                      department={MOCK_REPORT.department}
+                      address={MOCK_REPORT.address}
+                      description={MOCK_REPORT.description}
+                      photoCount={photoCount}
+                      onSubmit={handleSubmitReport}
+                    />
                   </div>
                 )}
 
-              {/* Report preview card */}
-              {msg.showPreview && (
-                <div className="max-w-[95%]">
-                  <ReportPreview
-                    category={MOCK_REPORT.category}
-                    department={MOCK_REPORT.department}
-                    address={MOCK_REPORT.address}
-                    description={MOCK_REPORT.description}
-                    photoCount={photoCount}
-                    onSubmit={handleSubmitReport}
-                  />
-                </div>
-              )}
-
-              {/* Confirmation */}
-              {msg.showConfirmation && (
-                <div className="flex flex-col gap-3 rounded-2xl bg-emerald-50 px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">&#10003;</span>
-                    <span className="text-sm font-semibold text-emerald-800">
-                      Report submitted!
-                    </span>
+                {/* Confirmation */}
+                {msg.showConfirmation && (
+                  <div className="flex flex-col gap-3 rounded-2xl bg-emerald-50 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">&#10003;</span>
+                      <span className="text-sm font-semibold text-emerald-800">
+                        Report submitted!
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-xs text-emerald-700">
+                      <p>Emailed to 311@vancouver.ca</p>
+                      <p>Reference: #SYV-00248</p>
+                    </div>
+                    <p className="text-xs text-emerald-600">
+                      We&apos;ll check for status updates from the city and
+                      notify you.
+                    </p>
+                    <div className="flex gap-2">
+                      <a
+                        href="/my-reports"
+                        className="inline-flex h-8 items-center rounded-md border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted"
+                      >
+                        View in My Reports
+                      </a>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs"
+                        onClick={onClose}
+                      >
+                        Done
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 text-xs text-emerald-700">
-                    <p>Emailed to 311@vancouver.ca</p>
-                    <p>Reference: #SYV-00248</p>
-                  </div>
-                  <p className="text-xs text-emerald-600">
-                    We&apos;ll check for status updates from the city and notify
-                    you.
-                  </p>
-                  <div className="flex gap-2">
-                    <a
-                      href="/my-reports"
-                      className="inline-flex h-8 items-center rounded-md border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted"
-                    >
-                      View in My Reports
-                    </a>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-xs"
-                      onClick={onClose}
-                    >
-                      Done
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
 
-      {/* Suggestion chips — AI Elements Suggestions */}
-      {activeSuggestions && (
-        <div className="border-t px-4 py-2">
-          <Suggestions>
-            {activeSuggestions.map((s) => (
-              <Suggestion
-                key={s}
-                suggestion={s}
-                onClick={handleSuggestion}
-              />
-            ))}
-          </Suggestions>
-        </div>
-      )}
-
-      {/* Input bar — AI Elements PromptInput */}
+      {/* Floating bottom bar: suggestions + input */}
       {step !== "done" && (
-        <div className="border-t px-3 py-2">
-          <PromptInput
-            onSubmit={handlePromptSubmit}
-            accept="image/*"
-            multiple
-          >
-            <PromptInputBody>
-              <PromptInputTextarea
-                placeholder="Type or attach..."
-                value={input}
-                onChange={(e) => setInput(e.currentTarget.value)}
-                className="min-h-10"
-              />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputTools>
-                <PromptInputButton
-                  tooltip="Add photo"
-                  onClick={handleAddPhoto}
-                >
-                  <Camera className="size-4" />
-                </PromptInputButton>
-                <PromptInputButton tooltip="Voice note">
-                  <Mic className="size-4" />
-                </PromptInputButton>
-                <PromptInputButton tooltip="Attach file">
-                  <Paperclip className="size-4" />
-                </PromptInputButton>
-              </PromptInputTools>
-              <PromptInputSubmit />
-            </PromptInputFooter>
-          </PromptInput>
+        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-0 bg-gradient-to-t from-background from-85% to-transparent pt-6">
+          {/* Suggestion chips */}
+          {activeSuggestions && (
+            <div className="px-4 pb-2">
+              <Suggestions>
+                {activeSuggestions.map((s) => (
+                  <Suggestion
+                    key={s}
+                    suggestion={s}
+                    onClick={handleSuggestion}
+                  />
+                ))}
+              </Suggestions>
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="border-t bg-background px-3 py-2">
+            <PromptInput
+              onSubmit={handlePromptSubmit}
+              accept="image/*"
+              multiple
+            >
+              <PromptInputBody>
+                <PromptInputTextarea
+                  placeholder="Type or attach..."
+                  value={input}
+                  onChange={(e) => setInput(e.currentTarget.value)}
+                  className="min-h-10"
+                />
+              </PromptInputBody>
+              <PromptInputFooter>
+                <PromptInputTools>
+                  <PromptInputButton
+                    tooltip="Add photo"
+                    onClick={handleAddPhoto}
+                  >
+                    <Camera className="size-4" />
+                  </PromptInputButton>
+                  <PromptInputButton tooltip="Voice note">
+                    <Mic className="size-4" />
+                  </PromptInputButton>
+                  <PromptInputButton tooltip="Attach file">
+                    <Paperclip className="size-4" />
+                  </PromptInputButton>
+                </PromptInputTools>
+                <PromptInputSubmit />
+              </PromptInputFooter>
+            </PromptInput>
+          </div>
         </div>
       )}
     </div>
