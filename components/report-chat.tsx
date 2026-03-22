@@ -1,7 +1,18 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, FormEvent } from "react";
-import { X, Camera, Mic, Paperclip, MapPin, Loader2 } from "lucide-react";
+import { useState, useCallback, useRef, FormEvent } from "react";
+import {
+  X,
+  Camera,
+  Mic,
+  Paperclip,
+  MapPin,
+  Loader2,
+  ChevronDown,
+  Check,
+  AlertCircle,
+  Wrench,
+} from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -22,279 +33,262 @@ import {
   PromptInputSubmit,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import { Suggestions, Suggestion } from "@/components/ai-elements/suggestion";
-import { ReportPreview } from "@/components/report-preview";
-import { Button } from "@/components/ui/button";
+import { streamChat, type ChatMessage } from "@/lib/chat-stream";
 
 // ── Types ──────────────────────────────────────────────────────────
 
-interface ChatMsg {
+interface ToolStep {
+  name: string;
+  label: string;
+  detail?: string;
+  resultSummary?: string;
+  status: "running" | "ok" | "error";
+}
+
+interface UIMsg {
   id: string;
   role: "assistant" | "user";
   text: string;
-  suggestions?: string[];
-  showPreview?: boolean;
-  showConfirmation?: boolean;
+  /** Active thinking label */
+  thinking?: string;
+  /** Completed/in-progress tool call steps */
+  toolCalls?: ToolStep[];
 }
-
-type Step = "location" | "capture" | "processing" | "review" | "done";
-
-// ── Mock flow data ─────────────────────────────────────────────────
-
-const MOCK_ADDRESS = "1425 W 4th Ave, Kitsilano";
-
-const MOCK_REPORT = {
-  category: "Abandoned Garbage Case",
-  department: "ENG - Sanitation Services",
-  address: MOCK_ADDRESS,
-  description:
-    "Large pile of household waste including broken furniture and garbage bags left on the sidewalk. Blocking pedestrian path. Approximately 2m x 1m area. Requires truck pickup.",
-};
 
 let msgId = 0;
 function nextId() {
   return String(++msgId);
 }
 
-// ── Streaming text hook ────────────────────────────────────────────
+// ── Tool calls display ─────────────────────────────────────────────
 
-const STREAM_SPEED = 18; // ms per character
-
-function useStreamedText(fullText: string, enabled: boolean) {
-  const [displayed, setDisplayed] = useState(enabled ? "" : fullText);
-  const [done, setDone] = useState(!enabled);
-  const indexRef = useRef(0);
-
-  useEffect(() => {
-    if (!enabled) {
-      setDisplayed(fullText);
-      setDone(true);
-      return;
-    }
-    setDisplayed("");
-    setDone(false);
-    indexRef.current = 0;
-
-    const interval = setInterval(() => {
-      indexRef.current += 1;
-      if (indexRef.current >= fullText.length) {
-        setDisplayed(fullText);
-        setDone(true);
-        clearInterval(interval);
-      } else {
-        setDisplayed(fullText.slice(0, indexRef.current));
-      }
-    }, STREAM_SPEED);
-
-    return () => clearInterval(interval);
-  }, [fullText, enabled]);
-
-  return { displayed, done };
-}
-
-// ── Streaming message wrapper ──────────────────────────────────────
-
-function StreamingMessage({
-  msg,
-  isLatest,
-  onStreamDone,
-}: {
-  msg: ChatMsg;
-  isLatest: boolean;
-  onStreamDone?: () => void;
-}) {
-  const shouldStream = msg.role === "assistant" && isLatest && msg.text.length > 0;
-  const { displayed, done } = useStreamedText(msg.text, shouldStream);
-  const calledRef = useRef(false);
-
-  useEffect(() => {
-    if (done && shouldStream && onStreamDone && !calledRef.current) {
-      calledRef.current = true;
-      onStreamDone();
-    }
-  }, [done, shouldStream, onStreamDone]);
-
-  if (!msg.text) return null;
+function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const allDone = steps.every((s) => s.status !== "running");
+  const label = allDone
+    ? `Used ${steps.length} tool${steps.length > 1 ? "s" : ""}`
+    : `Running ${steps.filter((s) => s.status === "running").length} tool${steps.filter((s) => s.status === "running").length > 1 ? "s" : ""}...`;
 
   return (
-    <Message from={msg.role}>
-      <MessageContent>
-        <MessageResponse>{displayed}</MessageResponse>
-      </MessageContent>
-    </Message>
+    <div className="flex flex-col gap-1 pl-1">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {allDone ? (
+          <Wrench className="h-3 w-3" />
+        ) : (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        )}
+        <span>{label}</span>
+        <ChevronDown
+          className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {expanded && (
+        <div className="ml-1 flex flex-col gap-1 border-l-2 border-muted pl-3 pt-1">
+          {steps.map((step, i) => (
+            <div key={`${step.name}-${i}`} className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1.5 text-xs">
+                {step.status === "running" && (
+                  <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                {step.status === "ok" && (
+                  <Check className="h-3 w-3 shrink-0 text-emerald-600" />
+                )}
+                {step.status === "error" && (
+                  <AlertCircle className="h-3 w-3 shrink-0 text-red-500" />
+                )}
+                <span className="font-medium">{step.label}</span>
+              </div>
+              {step.detail && (
+                <p className="ml-[18px] text-[11px] text-muted-foreground">
+                  {step.detail}
+                </p>
+              )}
+              {step.resultSummary && (
+                <p className="ml-[18px] text-[11px] text-muted-foreground">
+                  → {step.resultSummary}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 // ── Component ──────────────────────────────────────────────────────
 
+const WELCOME_MESSAGE =
+  "Hi! I'm here to help you report a city issue to Vancouver 311.\n\nWhat's going on? Just describe the problem in your own words.";
+
 export function ReportChat({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState<Step>("location");
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    {
-      id: nextId(),
-      role: "assistant",
-      text: "Hi! Let's report an issue. First — where is it?",
-    },
-    {
-      id: nextId(),
-      role: "assistant",
-      text: `📍 Using your location:\n\n**${MOCK_ADDRESS}**`,
-      suggestions: ["That's correct", "Enter a different address"],
-    },
+  const [messages, setMessages] = useState<UIMsg[]>([
+    { id: nextId(), role: "assistant", text: WELCOME_MESSAGE },
   ]);
   const [input, setInput] = useState("");
-  const [photoCount, setPhotoCount] = useState(0);
   const [streaming, setStreaming] = useState(false);
+  // Full conversation history sent to the backend (user + assistant only)
+  const historyRef = useRef<ChatMessage[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const push = useCallback((...msgs: Omit<ChatMsg, "id">[]) => {
-    // If any assistant message is being added, mark streaming
-    if (msgs.some((m) => m.role === "assistant" && m.text)) {
-      setStreaming(true);
+  // ── Send a message to the agent ────────────────────────────────
+
+  const sendToAgent = useCallback(async (userText: string, showInUI = true) => {
+    // Add user message to history
+    historyRef.current.push({ role: "user", content: userText });
+
+    // Optionally show user bubble (skip for the initial hidden prompt)
+    if (showInUI) {
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId(), role: "user", text: userText },
+      ]);
     }
-    setMessages((prev) => [...prev, ...msgs.map((m) => ({ ...m, id: nextId() }))]);
-  }, []);
 
-  const onStreamDone = useCallback(() => {
-    setStreaming(false);
-  }, []);
+    // Create a placeholder assistant message that we'll stream into
+    const assistantId = nextId();
+    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: "" }]);
+    setStreaming(true);
 
-  // ── Suggestion handler ────────────────────────────────────────
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-  const handleSuggestion = useCallback(
-    (text: string) => {
-      if (step === "location") {
-        push(
-          { role: "user", text },
-          {
-            role: "assistant",
-            text: "Got it. What's going on there?\nSend photos, a video, or just describe it — whatever's easiest.",
+    let fullText = "";
+    let currentThinking = "";
+
+    try {
+      for await (const event of streamChat(historyRef.current, controller.signal)) {
+        switch (event.type) {
+          case "delta":
+            fullText += event.text;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, text: fullText, thinking: undefined }
+                  : m
+              )
+            );
+            break;
+
+          case "thinking_start": {
+            const steps: ToolStep[] = event.steps.map((s) => ({
+              name: s.name,
+              label: s.label,
+              status: "running" as const,
+            }));
+            currentThinking = event.steps.map((s) => s.label).join(", ") + "...";
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, thinking: currentThinking, toolCalls: [...(m.toolCalls || []), ...steps] }
+                  : m
+              )
+            );
+            break;
           }
-        );
-        setStep("capture");
-      } else if (step === "capture") {
-        push({ role: "user", text });
-        handleFollowUp(text);
+
+          case "thinking_step":
+            currentThinking = event.label + "...";
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id !== assistantId) return m;
+                const tools = (m.toolCalls || []).map((t) =>
+                  t.name === event.name && t.status === "running"
+                    ? {
+                        ...t,
+                        status: event.status as "ok" | "error",
+                        detail: event.detail,
+                        resultSummary: event.result_summary,
+                      }
+                    : t
+                );
+                return { ...m, thinking: currentThinking, toolCalls: tools };
+              })
+            );
+            break;
+
+          case "thinking_end":
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, thinking: undefined } : m
+              )
+            );
+            break;
+
+          case "done":
+            // Update history with the full assistant reply
+            if (event.reply) {
+              historyRef.current.push({
+                role: "assistant",
+                content: event.reply,
+              });
+            }
+            break;
+
+          case "error":
+            fullText += `\n\n_Error: ${event.message}_`;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, text: fullText, thinking: undefined }
+                  : m
+              )
+            );
+            break;
+        }
       }
-    },
-    [step]
-  );
-
-  // ── Photo handler ─────────────────────────────────────────────
-
-  const handleAddPhoto = useCallback(() => {
-    const newCount = photoCount + 1;
-    setPhotoCount(newCount);
-    if (newCount === 1) {
-      push(
-        { role: "user", text: "📷 Photo attached" },
-        {
-          role: "assistant",
-          text: "Looks like abandoned garbage. A few quick questions so the city can act on this:\n\nHow big is the pile roughly?",
-          suggestions: [
-            "Small — fits in a bag",
-            "Medium — a few bags",
-            "Large — needs a truck",
-          ],
-        }
-      );
-    } else {
-      push(
-        { role: "user", text: `📷 Photo ${newCount} attached` },
-        {
-          role: "assistant",
-          text: `Got it — ${newCount} photos attached. You can add more or continue.`,
-        }
-      );
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        const errMsg =
+          err instanceof Error ? err.message : "Connection failed";
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  text: fullText || `_Could not reach the agent: ${errMsg}_`,
+                  thinking: undefined,
+                }
+              : m
+          )
+        );
+      }
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
     }
-  }, [photoCount]);
-
-  // ── Follow-up handler ─────────────────────────────────────────
-
-  function handleFollowUp(answer: string) {
-    const blocking =
-      answer.includes("sidewalk") ||
-      answer.includes("road") ||
-      answer.includes("private");
-
-    if (blocking) {
-      setStep("processing");
-      push({
-        role: "assistant",
-        text: "Analyzing your photos and generating the report...",
-      });
-      setTimeout(() => {
-        setStep("review");
-        push({
-          role: "assistant",
-          text: "Here's your report. Review it and hit send.",
-          showPreview: true,
-        });
-      }, 2000);
-    } else {
-      push({
-        role: "assistant",
-        text: "Is it blocking the sidewalk or roadway?",
-        suggestions: [
-          "Yes — sidewalk",
-          "Yes — road",
-          "No — on private property",
-        ],
-      });
-    }
-  }
-
-  // ── Submit report ─────────────────────────────────────────────
-
-  const handleSubmitReport = useCallback(() => {
-    setStep("done");
-    push({ role: "assistant", text: "", showConfirmation: true });
   }, []);
 
-  // ── Text submit ───────────────────────────────────────────────
+  // ── Handle form submit ─────────────────────────────────────────
 
   const handlePromptSubmit = useCallback(
     (message: PromptInputMessage, _e: FormEvent<HTMLFormElement>) => {
       const text = message.text.trim();
-      if (!text) return;
+      if (!text || streaming) return;
       setInput("");
-      push({ role: "user", text });
-
-      if (step === "capture") {
-        setStep("processing");
-        setTimeout(() => {
-          push({
-            role: "assistant",
-            text: "Analyzing your description and generating the report...",
-          });
-        }, 300);
-        setTimeout(() => {
-          setStep("review");
-          push({
-            role: "assistant",
-            text: "Here's your report. Review it and hit send.",
-            showPreview: true,
-          });
-        }, 2300);
-      }
+      sendToAgent(text);
     },
-    [step]
+    [streaming, sendToAgent]
   );
 
-  // ── Derived state ─────────────────────────────────────────────
+  // ── Handle stop ────────────────────────────────────────────────
 
-  const lastMsg = messages[messages.length - 1];
-  const activeSuggestions =
-    lastMsg?.suggestions &&
-    step !== "processing" &&
-    step !== "done" &&
-    !streaming
-      ? lastMsg.suggestions
-      : null;
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  // ── Determine chat status for PromptInputSubmit ────────────────
+
+  const chatStatus = streaming ? ("streaming" as const) : ("ready" as const);
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">Report an Issue</span>
@@ -307,142 +301,94 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Messages — AI Elements Conversation */}
-      <Conversation className="flex-1">
-        <ConversationContent className="gap-4 px-4 pt-4 pb-48">
-          {messages.map((msg, i) => {
-            const isLatest = i === messages.length - 1;
-            return (
-              <div key={msg.id} className="flex flex-col gap-2">
-                {/* Text message with streaming */}
-                {msg.text && (
-                  <StreamingMessage
-                    msg={msg}
-                    isLatest={isLatest}
-                    onStreamDone={isLatest ? onStreamDone : undefined}
-                  />
-                )}
+      {/* Messages */}
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="gap-4 px-4 pt-4 pb-4">
+          {messages.length === 0 && !streaming && (
+            <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+              <MapPin className="h-8 w-8 opacity-40" />
+              <p className="text-sm">
+                Describe your issue and the agent will help you file a report
+                with the City of Vancouver.
+              </p>
+            </div>
+          )}
 
-                {/* Processing spinner */}
-                {step === "processing" &&
-                  isLatest &&
-                  msg.role === "assistant" && (
-                    <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Classifying issue...
-                    </div>
-                  )}
+          {messages.map((msg) => (
+            <div key={msg.id} className="flex flex-col gap-2">
+              {/* Text content */}
+              {msg.text && (
+                <Message from={msg.role}>
+                  <MessageContent>
+                    <MessageResponse>{msg.text}</MessageResponse>
+                  </MessageContent>
+                </Message>
+              )}
 
-                {/* Report preview card */}
-                {msg.showPreview && (
-                  <div className="max-w-[95%]">
-                    <ReportPreview
-                      category={MOCK_REPORT.category}
-                      department={MOCK_REPORT.department}
-                      address={MOCK_REPORT.address}
-                      description={MOCK_REPORT.description}
-                      photoCount={photoCount}
-                      onSubmit={handleSubmitReport}
-                    />
+              {/* Tool calls */}
+              {msg.toolCalls && msg.toolCalls.length > 0 && (
+                <ToolCallsDisplay steps={msg.toolCalls} />
+              )}
+
+              {/* Thinking indicator */}
+              {msg.thinking && (
+                <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {msg.thinking}
+                </div>
+              )}
+
+              {/* Streaming cursor (empty assistant message, no tools yet) */}
+              {msg.role === "assistant" &&
+                !msg.text &&
+                !msg.thinking &&
+                !msg.toolCalls?.length &&
+                streaming && (
+                  <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Thinking...
                   </div>
                 )}
-
-                {/* Confirmation */}
-                {msg.showConfirmation && (
-                  <div className="flex flex-col gap-3 rounded-2xl bg-emerald-50 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">&#10003;</span>
-                      <span className="text-sm font-semibold text-emerald-800">
-                        Report submitted!
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1 text-xs text-emerald-700">
-                      <p>Emailed to 311@vancouver.ca</p>
-                      <p>Reference: #SYV-00248</p>
-                    </div>
-                    <p className="text-xs text-emerald-600">
-                      We&apos;ll check for status updates from the city and
-                      notify you.
-                    </p>
-                    <div className="flex gap-2">
-                      <a
-                        href="/my-reports"
-                        className="inline-flex h-8 items-center rounded-md border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted"
-                      >
-                        View in My Reports
-                      </a>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs"
-                        onClick={onClose}
-                      >
-                        Done
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+            </div>
+          ))}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
 
-      {/* Floating bottom bar: suggestions + input */}
-      {step !== "done" && (
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-0 bg-gradient-to-t from-background from-85% to-transparent pt-6">
-          {/* Suggestion chips */}
-          {activeSuggestions && (
-            <div className="px-4 pb-2">
-              <Suggestions>
-                {activeSuggestions.map((s) => (
-                  <Suggestion
-                    key={s}
-                    suggestion={s}
-                    onClick={handleSuggestion}
-                  />
-                ))}
-              </Suggestions>
-            </div>
-          )}
-
-          {/* Input */}
-          <div className="border-t bg-background px-3 py-2">
-            <PromptInput
-              onSubmit={handlePromptSubmit}
-              accept="image/*"
-              multiple
-            >
-              <PromptInputBody>
-                <PromptInputTextarea
-                  placeholder="Type or attach..."
-                  value={input}
-                  onChange={(e) => setInput(e.currentTarget.value)}
-                  className="min-h-10"
-                />
-              </PromptInputBody>
-              <PromptInputFooter>
-                <PromptInputTools>
-                  <PromptInputButton
-                    tooltip="Add photo"
-                    onClick={handleAddPhoto}
-                  >
-                    <Camera className="size-4" />
-                  </PromptInputButton>
-                  <PromptInputButton tooltip="Voice note">
-                    <Mic className="size-4" />
-                  </PromptInputButton>
-                  <PromptInputButton tooltip="Attach file">
-                    <Paperclip className="size-4" />
-                  </PromptInputButton>
-                </PromptInputTools>
-                <PromptInputSubmit />
-              </PromptInputFooter>
-            </PromptInput>
-          </div>
-        </div>
-      )}
+      {/* Input — always at bottom */}
+      <div className="shrink-0 border-t px-3 py-2">
+        <PromptInput
+          onSubmit={handlePromptSubmit}
+          accept="image/*"
+          multiple
+        >
+          <PromptInputBody>
+            <PromptInputTextarea
+              placeholder="Describe your issue..."
+              value={input}
+              onChange={(e) => setInput(e.currentTarget.value)}
+              className="min-h-10"
+            />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputTools>
+              <PromptInputButton tooltip="Add photo">
+                <Camera className="size-4" />
+              </PromptInputButton>
+              <PromptInputButton tooltip="Voice note">
+                <Mic className="size-4" />
+              </PromptInputButton>
+              <PromptInputButton tooltip="Attach file">
+                <Paperclip className="size-4" />
+              </PromptInputButton>
+            </PromptInputTools>
+            <PromptInputSubmit
+              status={chatStatus}
+              onStop={handleStop}
+            />
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
     </div>
   );
 }
