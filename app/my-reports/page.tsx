@@ -4,8 +4,10 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { myReports, formatDate } from "@/lib/mock-data";
+import { useMapFocus } from "@/lib/map-context";
 
 export default function MyReportsPage() {
+  const { focusReport } = useMapFocus();
   return (
     <div className="flex w-full flex-col gap-6 px-4 py-6">
       <h1 className="text-lg font-semibold">
@@ -18,6 +20,7 @@ export default function MyReportsPage() {
             key={report.id}
             href={`/my-reports/${report.id}`}
             className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+            onClick={() => focusReport(report)}
           >
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">

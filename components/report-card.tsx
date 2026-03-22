@@ -1,9 +1,15 @@
 import { type Report, formatDate, titleCase } from "@/lib/mock-data";
 import { StatusBadge } from "@/components/status-badge";
+import { useMapFocus } from "@/lib/map-context";
 
 export function ReportCard({ report }: { report: Report }) {
+  const { focusReport } = useMapFocus();
+
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50">
+    <div
+      className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50"
+      onClick={() => focusReport(report)}
+    >
       <div className="flex flex-col gap-1">
         <span className="text-base font-semibold">
           {report.service_request_type}
