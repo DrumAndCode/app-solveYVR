@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Map } from "lucide-react";
 import { Nav } from "@/components/nav";
 import { IssueMap } from "@/components/issue-map";
-import { MapProvider } from "@/lib/map-context";
+import { MapProvider, useMapFocus } from "@/lib/map-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +15,31 @@ const tabs = [
   { href: "/my-reports", label: "My Reports" },
 ];
 
+/** Navigate to home when a report location is set from the map pin */
+function ReportLocationRouter({ onReport }: { onReport?: () => void }) {
+  const { reportLocation } = useMapFocus();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (reportLocation) {
+      onReport?.();
+      if (pathname !== "/") {
+        router.push("/");
+      }
+    }
+  }, [reportLocation, pathname, router, onReport]);
+
+  return null;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [showMap, setShowMap] = useState(false);
 
   return (
     <MapProvider>
+    <ReportLocationRouter onReport={() => setShowMap(false)} />
     <div className="relative flex h-full flex-1">
       {/* Full-bleed map — hidden on mobile unless toggled, always visible on md+ */}
       <div className={cn(
