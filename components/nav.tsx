@@ -15,7 +15,7 @@ export function Nav() {
 
   return (
     <nav className="flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm">
-      <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+      <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
         <MapPin className="h-5 w-5 text-primary" />
         SolveYVR
       </Link>
