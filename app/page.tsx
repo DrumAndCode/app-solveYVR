@@ -3,14 +3,15 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ReportChat } from "@/components/report-chat";
-import { Button } from "@/components/ui/button";
-import { MapPin, Plus } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { mockReports } from "@/lib/mock-data";
 import { useMapFocus, type LocationInfo } from "@/lib/map-context";
 
 function HomeContent() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLocation, setChatLocation] = useState<LocationInfo | null>(null);
+  // Key forces ReportChat to remount (fresh agent) when location changes
+  const [chatKey, setChatKey] = useState(0);
   const searchParams = useSearchParams();
   const { reportLocation, clearReportLocation } = useMapFocus();
 
@@ -20,10 +21,11 @@ function HomeContent() {
     }
   }, [searchParams]);
 
-  // When a pin's "Report an issue here" is clicked, open chat with that location
+  // When a pin's "Report an issue here" is clicked, open/restart chat with that location
   useEffect(() => {
     if (reportLocation) {
       setChatLocation(reportLocation);
+      setChatKey((k) => k + 1); // force remount → fresh agent session
       setChatOpen(true);
       clearReportLocation();
     }
@@ -33,6 +35,7 @@ function HomeContent() {
     return (
       <div className="absolute inset-0 flex flex-col">
         <ReportChat
+          key={chatKey}
           onClose={() => {
             setChatOpen(false);
             setChatLocation(null);
@@ -58,14 +61,9 @@ function HomeContent() {
           Your voice for a better city.
         </p>
       </div>
-      <Button
-        size="lg"
-        className="mt-2 gap-2"
-        onClick={() => setChatOpen(true)}
-      >
-        <Plus className="h-4 w-4" />
-        Report Your First Issue
-      </Button>
+      <p className="text-sm text-muted-foreground max-w-[280px]">
+        Tap the blue pin on the map to report an issue at that location.
+      </p>
       <p className="text-xs text-muted-foreground">
         {openCount} open issues across Vancouver right now
       </p>

@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   MapPin,
-  Plus,
   HelpCircle,
   ClipboardList,
   BarChart3,
@@ -43,17 +41,7 @@ const steps = [
   { num: "3", text: "We pin it on the map" },
 ];
 
-export function Nav({ onReportClick }: { onReportClick?: () => void }) {
-  const router = useRouter();
-
-  function handleReport() {
-    if (onReportClick) {
-      onReportClick();
-    } else {
-      router.push("/?report=1");
-    }
-  }
-
+export function Nav() {
   return (
     <nav className="flex h-14 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm">
       <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
@@ -114,10 +102,6 @@ export function Nav({ onReportClick }: { onReportClick?: () => void }) {
           </DialogContent>
         </Dialog>
 
-        <Button onClick={handleReport}>
-          <Plus className="mr-1 h-3 w-3" />
-          Report
-        </Button>
       </div>
     </nav>
   );
