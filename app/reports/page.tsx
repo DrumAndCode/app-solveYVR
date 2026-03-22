@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
+import { Nav } from "@/components/nav";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -55,6 +56,8 @@ export default function ReportsPage() {
   const hasMore = visibleCount < filtered.length;
 
   return (
+    <>
+    <Nav />
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       {/* Filters */}
       <div className="flex flex-col gap-3">
@@ -152,5 +155,6 @@ export default function ReportsPage() {
         Data from Vancouver Open Data &middot; Updated monthly
       </div>
     </div>
+    </>
   );
 }

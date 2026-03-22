@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { Nav } from "@/components/nav";
 import { StatusBadge } from "@/components/status-badge";
 import { myReports, formatDate } from "@/lib/mock-data";
 
 export default function MyReportsPage() {
   return (
+    <>
+    <Nav />
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <h1 className="text-lg font-semibold">
         My Reports ({myReports.length})
@@ -49,5 +52,6 @@ export default function MyReportsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

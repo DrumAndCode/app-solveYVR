@@ -3,6 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { ArrowLeft, Image as ImageIcon, Play } from "lucide-react";
+import { Nav } from "@/components/nav";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/status-badge";
 import { StatusTimeline } from "@/components/status-timeline";
@@ -18,6 +19,8 @@ export default function ReportDetailPage({
 
   if (!report) {
     return (
+      <>
+      <Nav />
       <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-8">
         <Link
           href="/my-reports"
@@ -28,6 +31,7 @@ export default function ReportDetailPage({
         </Link>
         <p className="text-sm text-muted-foreground">Report not found.</p>
       </div>
+      </>
     );
   }
 
@@ -63,6 +67,8 @@ export default function ReportDetailPage({
   ];
 
   return (
+    <>
+    <Nav />
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <Link
         href="/my-reports"
@@ -147,5 +153,6 @@ export default function ReportDetailPage({
         <StatusTimeline events={timelineEvents} />
       </div>
     </div>
+    </>
   );
 }

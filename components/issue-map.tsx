@@ -9,7 +9,6 @@ import MapGL, {
 } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MapPopup } from "@/components/map-popup";
 import { MapFilter, type Filters } from "@/components/map-filter";
@@ -36,11 +35,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-export function IssueMap({
-  onReportClick,
-}: {
-  onReportClick?: () => void;
-}) {
+export function IssueMap() {
   const mapRef = useRef<MapRef>(null);
   const [selected, setSelected] = useState<Report | null>(null);
   const [filters, setFilters] = useState<Filters>({
@@ -150,13 +145,6 @@ export function IssueMap({
         </Button>
       </div>
 
-      {/* CTA */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-        <Button size="lg" className="shadow-lg" onClick={onReportClick}>
-          <Plus className="mr-2 h-4 w-4" />
-          Report Issue Here
-        </Button>
-      </div>
     </div>
   );
 }

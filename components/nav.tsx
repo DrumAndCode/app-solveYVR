@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { MapPin } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { MapPin, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,8 +11,17 @@ const links = [
   { href: "/my-reports", label: "My Reports" },
 ];
 
-export function Nav() {
+export function Nav({ onReportClick }: { onReportClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  function handleReport() {
+    if (onReportClick) {
+      onReportClick();
+    } else {
+      router.push("/?report=1");
+    }
+  }
 
   return (
     <nav className="flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm">
@@ -35,7 +45,11 @@ export function Nav() {
             {link.label}
           </Link>
         ))}
-        <button className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+        <Button size="sm" onClick={handleReport}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Report Issue
+        </Button>
+        <button className="rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted">
           Sign In
         </button>
       </div>
