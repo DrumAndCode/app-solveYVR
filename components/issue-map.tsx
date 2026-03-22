@@ -7,6 +7,7 @@ import MapGL, {
   NavigationControl,
   type MapRef,
 } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,26 @@ import { MapPopup } from "@/components/map-popup";
 import { MapFilter, type Filters } from "@/components/map-filter";
 import { type Report, mockReports, VANCOUVER_CENTER } from "@/lib/mock-data";
 
-// Free OpenStreetMap vector tiles via Protomaps / demotiles
-const MAP_STYLE =
-  "https://demotiles.maplibre.org/style.json";
+const MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    },
+  },
+  layers: [
+    {
+      id: "osm-tiles",
+      type: "raster",
+      source: "osm",
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+};
 
 export function IssueMap({
   onReportClick,
