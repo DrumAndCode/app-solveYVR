@@ -11,6 +11,10 @@ import {
   Check,
   AlertCircle,
   RotateCcw,
+  Square,
+  Image as ImageIcon,
+  FileIcon,
+  Music,
 } from "lucide-react";
 import {
   Conversation,
@@ -27,9 +31,11 @@ import {
   PromptInputBody,
   PromptInputTextarea,
   PromptInputFooter,
+  PromptInputHeader,
   PromptInputTools,
   PromptInputButton,
   PromptInputSubmit,
+  usePromptInputAttachments,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { streamChat, type ChatMessage } from "@/lib/chat-stream";
@@ -44,14 +50,20 @@ interface ToolStep {
   status: "running" | "ok" | "error";
 }
 
+interface Attachment {
+  id: string;
+  name: string;
+  type: string; // MIME
+  url: string; // blob or data URL
+}
+
 interface UIMsg {
   id: string;
   role: "assistant" | "user";
   text: string;
-  /** Active thinking label */
   thinking?: string;
-  /** Completed/in-progress tool call steps */
   toolCalls?: ToolStep[];
+  attachments?: Attachment[];
 }
 
 let msgId = Date.now();
@@ -72,7 +84,6 @@ function loadSavedMessages(): UIMsg[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as UIMsg[];
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
-    // Re-key all messages to avoid collisions with new IDs
     return parsed.map((m) => ({
       ...m,
       id: m.id === WELCOME_ID ? WELCOME_ID : nextId(),
@@ -99,7 +110,7 @@ function saveChat(messages: UIMsg[], history: ChatMessage[]) {
     localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(messages));
     localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
   } catch {
-    // Storage full or unavailable — silently ignore
+    // Storage full or unavailable
   }
 }
 
@@ -112,30 +123,187 @@ function clearSavedChat() {
 
 function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
   return (
-    <div className="flex flex-col gap-1 pl-1">
-        <div className="ml-1 flex flex-col gap-1 border-l-2 border-muted pl-3">
-          {steps.map((step, i) => (
-            <div key={`${step.name}-${i}`} className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-1.5 text-xs">
-                {step.status === "running" && (
-                  <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
-                )}
-                {step.status === "ok" && (
-                  <Check className="h-3 w-3 shrink-0 text-emerald-600" />
-                )}
-                {step.status === "error" && (
-                  <AlertCircle className="h-3 w-3 shrink-0 text-red-500" />
-                )}
-                <span className="font-medium">{step.label}</span>
-              </div>
-              {step.detail && (
-                <p className="ml-[18px] text-[11px] text-muted-foreground truncate max-w-full">
-                  {step.detail}
-                </p>
-              )}
-            </div>
-          ))}
+    <div className="flex flex-col gap-1.5">
+      {steps.map((step, i) => (
+        <div
+          key={`${step.name}-${i}`}
+          className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 max-w-[85%] text-xs"
+        >
+          {step.status === "running" && (
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+          )}
+          {step.status === "ok" && (
+            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+          )}
+          {step.status === "error" && (
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          )}
+          <span className="font-medium">{step.label}</span>
+          {step.detail && (
+            <span className="truncate text-muted-foreground">
+              · {step.detail}
+            </span>
+          )}
         </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Attachment previews in input header ─────────────────────────────
+
+function AttachmentPreviews() {
+  const { files, remove } = usePromptInputAttachments();
+  if (files.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {files.map((file) => {
+        const isImage = file.mediaType?.startsWith("image/");
+        const isAudio = file.mediaType?.startsWith("audio/");
+        return (
+          <div
+            key={file.id}
+            className="group relative flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-xs"
+          >
+            {isImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={file.url}
+                alt={file.filename || "attachment"}
+                className="h-8 w-8 rounded object-cover"
+              />
+            ) : isAudio ? (
+              <Music className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <FileIcon className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="max-w-[100px] truncate">
+              {file.filename || "file"}
+            </span>
+            <button
+              onClick={() => remove(file.id)}
+              className="ml-0.5 rounded-full p-0.5 opacity-60 hover:bg-muted hover:opacity-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Attachment buttons wired to PromptInput context ─────────────────
+
+function PhotoButton() {
+  const { openFileDialog } = usePromptInputAttachments();
+  return (
+    <PromptInputButton tooltip="Add photo" onClick={openFileDialog}>
+      <Camera className="size-4" />
+    </PromptInputButton>
+  );
+}
+
+function FileButton() {
+  const { add } = usePromptInputAttachments();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) add(e.target.files);
+          e.target.value = "";
+        }}
+      />
+      <PromptInputButton
+        tooltip="Attach file"
+        onClick={() => fileRef.current?.click()}
+      >
+        <Paperclip className="size-4" />
+      </PromptInputButton>
+    </>
+  );
+}
+
+function VoiceButton() {
+  const { add } = usePromptInputAttachments();
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const toggleRecording = useCallback(async () => {
+    if (recording) {
+      // Stop
+      mediaRecorderRef.current?.stop();
+      setRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `voice-note-${Date.now()}.webm`, {
+          type: "audio/webm",
+        });
+        add([file]);
+        // Stop all tracks
+        for (const track of stream.getTracks()) track.stop();
+      };
+
+      recorder.start();
+      setRecording(true);
+    } catch {
+      // Mic permission denied
+    }
+  }, [recording, add]);
+
+  return (
+    <PromptInputButton
+      tooltip={recording ? "Stop recording" : "Voice note"}
+      onClick={toggleRecording}
+      className={recording ? "text-red-500" : ""}
+    >
+      {recording ? <Square className="size-4 fill-current" /> : <Mic className="size-4" />}
+    </PromptInputButton>
+  );
+}
+
+// ── Message attachment display ──────────────────────────────────────
+
+function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {attachments.map((att) => {
+        const isImage = att.type.startsWith("image/");
+        const isAudio = att.type.startsWith("audio/");
+        return (
+          <div key={att.id} className="flex items-center gap-1.5 rounded-md border bg-muted/30 px-2 py-1 text-xs">
+            {isImage ? (
+              <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : isAudio ? (
+              <Music className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <FileIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <span className="max-w-[120px] truncate text-muted-foreground">{att.name}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -147,12 +315,10 @@ const WELCOME_MESSAGE =
 
 export interface ReportChatProps {
   onClose: () => void;
-  /** Pre-fill location context from a map pin click */
   initialLocation?: { lat: number; lng: number; address?: string } | null;
 }
 
 export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
-  // If a location is provided and no saved chat exists, show a location-aware welcome
   const welcomeText = useMemo(() => {
     if (initialLocation?.address) {
       return `Hi! I'm here to help you report a city issue to Vancouver 311.\n\n📍 **${initialLocation.address}**\n\nWhat's going on at this location?`;
@@ -161,7 +327,6 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
   }, [initialLocation]);
 
   const [messages, setMessages] = useState<UIMsg[]>(() => {
-    // If location was provided, start a fresh chat with location context (don't restore old)
     if (initialLocation) {
       clearSavedChat();
       return [{ id: WELCOME_ID, role: "assistant", text: welcomeText }];
@@ -171,28 +336,24 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
   });
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  // Full conversation history sent to the backend (user + assistant only)
   const historyRef = useRef<ChatMessage[]>(
     initialLocation ? [] : (loadSavedHistory() ?? [])
   );
   const abortRef = useRef<AbortController | null>(null);
 
-  // When a location is provided, prepend it as context in the history
-  // so the agent knows where the user is reporting from
+  // When a location is provided, inject it as system context
   const didSendLocation = useRef(false);
   useEffect(() => {
     if (initialLocation && !didSendLocation.current) {
       didSendLocation.current = true;
-      const locText = initialLocation.address
-        ? `The issue is at ${initialLocation.address} (lat: ${initialLocation.lat}, lng: ${initialLocation.lng}).`
-        : `The issue is at coordinates ${initialLocation.lat}, ${initialLocation.lng}.`;
+      const addr = initialLocation.address || "unknown";
       historyRef.current = [
-        { role: "system", content: `User selected a location on the map: ${locText} Use this location for the report — don't ask for the address again.` },
+        { role: "system", content: `The user dropped a pin on the map at: ${addr} (coordinates: ${initialLocation.lat}, ${initialLocation.lng}). Always use this exact address ("${addr}") as the location for the report. Do not ask the user for an address — it has already been provided via the map pin. Only ask about the issue itself.` },
       ];
     }
   }, [initialLocation]);
 
-  // Persist chat to localStorage whenever messages change
+  // Persist chat to localStorage
   useEffect(() => {
     if (!streaming) {
       saveChat(messages, historyRef.current);
@@ -212,21 +373,19 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
 
   // ── Send a message to the agent ────────────────────────────────
 
-  const sendToAgent = useCallback(async (userText: string, showInUI = true) => {
-    // Add user message to history
+  const sendToAgent = useCallback(async (userText: string, attachments?: Attachment[]) => {
     historyRef.current.push({ role: "user", content: userText });
 
-    // Optionally show user bubble (skip for the initial hidden prompt)
-    if (showInUI) {
-      setMessages((prev) => [
-        ...prev,
-        { id: nextId(), role: "user", text: userText },
-      ]);
-    }
+    // Add user bubble with attachments
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), role: "user", text: userText, attachments },
+    ]);
 
-    // Create a placeholder assistant message that we'll stream into
-    const assistantId = nextId();
-    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: "" }]);
+    // Track the current assistant message being streamed into.
+    // After tool calls finish, we create a NEW message for the follow-up text.
+    let currentMsgId = nextId();
+    setMessages((prev) => [...prev, { id: currentMsgId, role: "assistant", text: "" }]);
     setStreaming(true);
 
     const controller = new AbortController();
@@ -234,15 +393,26 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
 
     let fullText = "";
     let currentThinking = "";
+    let hadToolCalls = false;
 
     try {
       for await (const event of streamChat(historyRef.current, controller.signal)) {
         switch (event.type) {
           case "delta":
+            // If we just finished tool calls, start a new message for the reply
+            if (hadToolCalls) {
+              hadToolCalls = false;
+              fullText = "";
+              currentMsgId = nextId();
+              setMessages((prev) => [
+                ...prev,
+                { id: currentMsgId, role: "assistant", text: "" },
+              ]);
+            }
             fullText += event.text;
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId
+                m.id === currentMsgId
                   ? { ...m, text: fullText, thinking: undefined }
                   : m
               )
@@ -258,7 +428,7 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             currentThinking = event.steps.map((s) => s.label).join(", ") + "...";
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId
+                m.id === currentMsgId
                   ? { ...m, thinking: currentThinking, toolCalls: [...(m.toolCalls || []), ...steps] }
                   : m
               )
@@ -270,7 +440,7 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             currentThinking = event.label + "...";
             setMessages((prev) =>
               prev.map((m) => {
-                if (m.id !== assistantId) return m;
+                if (m.id !== currentMsgId) return m;
                 const tools = (m.toolCalls || []).map((t) =>
                   t.name === event.name && t.status === "running"
                     ? {
@@ -287,15 +457,15 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             break;
 
           case "thinking_end":
+            hadToolCalls = true;
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId ? { ...m, thinking: undefined } : m
+                m.id === currentMsgId ? { ...m, thinking: undefined } : m
               )
             );
             break;
 
           case "done":
-            // Update history with the full assistant reply
             if (event.reply) {
               historyRef.current.push({
                 role: "assistant",
@@ -308,7 +478,7 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             fullText += `\n\n_Error: ${event.message}_`;
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId
+                m.id === currentMsgId
                   ? { ...m, text: fullText, thinking: undefined }
                   : m
               )
@@ -322,7 +492,7 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
           err instanceof Error ? err.message : "Connection failed";
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantId
+            m.id === currentMsgId
               ? {
                   ...m,
                   text: fullText || `_Could not reach the agent: ${errMsg}_`,
@@ -343,9 +513,32 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
   const handlePromptSubmit = useCallback(
     (message: PromptInputMessage, _e: FormEvent<HTMLFormElement>) => {
       const text = message.text.trim();
-      if (!text || streaming) return;
+      const hasFiles = message.files.length > 0;
+      if ((!text && !hasFiles) || streaming) return;
       setInput("");
-      sendToAgent(text);
+
+      // Build attachment metadata for display
+      const atts: Attachment[] = message.files.map((f) => ({
+        id: nextId(),
+        name: f.filename || "file",
+        type: f.mediaType || "application/octet-stream",
+        url: f.url,
+      }));
+
+      // Build the text to send to the agent (describe attachments)
+      let agentText = text;
+      if (atts.length > 0) {
+        const fileDesc = atts
+          .map((a) => {
+            if (a.type.startsWith("image/")) return `[Photo: ${a.name}]`;
+            if (a.type.startsWith("audio/")) return `[Voice note: ${a.name}]`;
+            return `[File: ${a.name}]`;
+          })
+          .join(" ");
+        agentText = agentText ? `${agentText}\n\n${fileDesc}` : fileDesc;
+      }
+
+      sendToAgent(agentText, atts.length > 0 ? atts : undefined);
     },
     [streaming, sendToAgent]
   );
@@ -355,8 +548,6 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
   }, []);
-
-  // ── Determine chat status for PromptInputSubmit ────────────────
 
   const chatStatus = streaming ? ("streaming" as const) : ("ready" as const);
 
@@ -401,42 +592,54 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
           {messages.map((msg, idx) => {
             const isStreaming = streaming && idx === messages.length - 1 && msg.role === "assistant";
             return (
-            <div key={msg.id} className="flex flex-col gap-2">
-              {/* Text content */}
-              {msg.text && (
-                <Message from={msg.role}>
-                  <MessageContent>
-                    <MessageResponse mode={isStreaming ? "streaming" : "static"}>{msg.text}</MessageResponse>
-                  </MessageContent>
-                </Message>
-              )}
+              <div key={msg.id} className="flex flex-col gap-2">
+                {/* Text content */}
+                {msg.text && (
+                  <Message from={msg.role}>
+                    <MessageContent>
+                      <MessageResponse mode={isStreaming ? "streaming" : "static"}>{msg.text}</MessageResponse>
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <MessageAttachments attachments={msg.attachments} />
+                      )}
+                    </MessageContent>
+                  </Message>
+                )}
 
-              {/* Tool calls */}
-              {msg.toolCalls && msg.toolCalls.length > 0 && (
-                <ToolCallsDisplay steps={msg.toolCalls} />
-              )}
+                {/* Attachment-only message (no text) */}
+                {!msg.text && msg.attachments && msg.attachments.length > 0 && (
+                  <Message from={msg.role}>
+                    <MessageContent>
+                      <MessageAttachments attachments={msg.attachments} />
+                    </MessageContent>
+                  </Message>
+                )}
 
-              {/* Thinking indicator */}
-              {msg.thinking && (
-                <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  {msg.thinking}
-                </div>
-              )}
+                {/* Tool calls */}
+                {msg.toolCalls && msg.toolCalls.length > 0 && (
+                  <ToolCallsDisplay steps={msg.toolCalls} />
+                )}
 
-              {/* Streaming cursor (empty assistant message, no tools yet) */}
-              {msg.role === "assistant" &&
-                !msg.text &&
-                !msg.thinking &&
-                !msg.toolCalls?.length &&
-                streaming && (
+                {/* Thinking indicator */}
+                {msg.thinking && (
                   <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Thinking...
+                    {msg.thinking}
                   </div>
                 )}
-            </div>
-          );
+
+                {/* Streaming cursor */}
+                {msg.role === "assistant" &&
+                  !msg.text &&
+                  !msg.thinking &&
+                  !msg.toolCalls?.length &&
+                  streaming && (
+                    <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Thinking...
+                    </div>
+                  )}
+              </div>
+            );
           })}
         </ConversationContent>
         <ConversationScrollButton />
@@ -446,9 +649,12 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
       <div className="shrink-0 border-t px-3 py-2">
         <PromptInput
           onSubmit={handlePromptSubmit}
-          accept="image/*"
+          accept="image/*,audio/*"
           multiple
         >
+          <PromptInputHeader>
+            <AttachmentPreviews />
+          </PromptInputHeader>
           <PromptInputBody>
             <PromptInputTextarea
               placeholder="Describe your issue..."
@@ -459,15 +665,9 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
           </PromptInputBody>
           <PromptInputFooter>
             <PromptInputTools>
-              <PromptInputButton tooltip="Add photo">
-                <Camera className="size-4" />
-              </PromptInputButton>
-              <PromptInputButton tooltip="Voice note">
-                <Mic className="size-4" />
-              </PromptInputButton>
-              <PromptInputButton tooltip="Attach file">
-                <Paperclip className="size-4" />
-              </PromptInputButton>
+              <PhotoButton />
+              <VoiceButton />
+              <FileButton />
             </PromptInputTools>
             <PromptInputSubmit
               status={chatStatus}
