@@ -1,103 +1,29 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import {
-  APIProvider,
-  Map,
-  AdvancedMarker,
-  InfoWindow,
-  useMap,
-} from "@vis.gl/react-google-maps";
+import { useState, useCallback, useRef, useMemo } from "react";
+import MapGL, {
+  Marker,
+  Popup,
+  NavigationControl,
+  type MapRef,
+} from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MapPopup } from "@/components/map-popup";
 import { MapFilter, type Filters } from "@/components/map-filter";
 import { type Report, mockReports, VANCOUVER_CENTER } from "@/lib/mock-data";
 
-const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID ?? "DEMO_MAP_ID";
-
-function MapPins({
-  reports,
-  selected,
-  onSelect,
-}: {
-  reports: Report[];
-  selected: Report | null;
-  onSelect: (r: Report | null) => void;
-}) {
-  return (
-    <>
-      {reports.map((report) => (
-        <AdvancedMarker
-          key={report.id}
-          position={{ lat: report.lat, lng: report.lng }}
-          onClick={() => onSelect(report)}
-        >
-          <div
-            className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white shadow-md ${
-              report.status === "Open" ? "bg-amber-500" : "bg-emerald-500"
-            }`}
-          />
-        </AdvancedMarker>
-      ))}
-
-      {selected && (
-        <InfoWindow
-          position={{ lat: selected.lat, lng: selected.lng }}
-          onCloseClick={() => onSelect(null)}
-          pixelOffset={[0, -8]}
-        >
-          <MapPopup report={selected} />
-        </InfoWindow>
-      )}
-    </>
-  );
-}
-
-function RecenterButton() {
-  const map = useMap();
-
-  const handleRecenter = useCallback(() => {
-    if (!navigator.geolocation || !map) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        map.setZoom(15);
-      },
-      () => {
-        // Permission denied — stay on Vancouver center
-        map.panTo(VANCOUVER_CENTER);
-      }
-    );
-  }, [map]);
-
-  return (
-    <Button
-      size="icon"
-      variant="secondary"
-      className="h-8 w-8 shadow-md"
-      onClick={handleRecenter}
-      title="Center on my location"
-    >
-      <svg
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
-      </svg>
-    </Button>
-  );
-}
+// Free OpenStreetMap vector tiles via Protomaps / demotiles
+const MAP_STYLE =
+  "https://demotiles.maplibre.org/style.json";
 
 export function IssueMap({
   onReportClick,
 }: {
   onReportClick?: () => void;
 }) {
+  const mapRef = useRef<MapRef>(null);
   const [selected, setSelected] = useState<Report | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: "all",
@@ -115,44 +41,104 @@ export function IssueMap({
     });
   }, [filters]);
 
+  const handleRecenter = useCallback(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        mapRef.current?.flyTo({
+          center: [pos.coords.longitude, pos.coords.latitude],
+          zoom: 15,
+        });
+      },
+      () => {
+        mapRef.current?.flyTo({
+          center: [VANCOUVER_CENTER.lng, VANCOUVER_CENTER.lat],
+          zoom: 12,
+        });
+      }
+    );
+  }, []);
+
   return (
     <div className="relative flex-1">
-      <APIProvider apiKey={GOOGLE_MAPS_KEY}>
-        <Map
-          defaultCenter={VANCOUVER_CENTER}
-          defaultZoom={12}
-          mapId={MAP_ID}
-          gestureHandling="greedy"
-          disableDefaultUI
-          className="h-full w-full"
-        >
-          <MapPins
-            reports={filtered}
-            selected={selected}
-            onSelect={setSelected}
-          />
-        </Map>
+      <MapGL
+        ref={mapRef}
+        initialViewState={{
+          longitude: VANCOUVER_CENTER.lng,
+          latitude: VANCOUVER_CENTER.lat,
+          zoom: 12,
+        }}
+        style={{ width: "100%", height: "100%" }}
+        mapStyle={MAP_STYLE}
+      >
+        <NavigationControl position="top-right" />
 
-        {/* Controls overlay */}
-        <div className="absolute bottom-6 left-4 flex flex-col gap-2">
-          <div className="relative">
-            <MapFilter filters={filters} onChange={setFilters} />
-          </div>
-          <RecenterButton />
-        </div>
-
-        {/* CTA */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-          <Button
-            size="lg"
-            className="shadow-lg"
-            onClick={onReportClick}
+        {/* Pins */}
+        {filtered.map((report) => (
+          <Marker
+            key={report.id}
+            longitude={report.lng}
+            latitude={report.lat}
+            anchor="center"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setSelected(report);
+            }}
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Report Issue Here
-          </Button>
+            <div
+              className={`h-3.5 w-3.5 cursor-pointer rounded-full border-2 border-white shadow-md transition-transform hover:scale-125 ${
+                report.status === "Open" ? "bg-amber-500" : "bg-emerald-500"
+              }`}
+            />
+          </Marker>
+        ))}
+
+        {/* Popup */}
+        {selected && (
+          <Popup
+            longitude={selected.lng}
+            latitude={selected.lat}
+            anchor="bottom"
+            onClose={() => setSelected(null)}
+            closeOnClick={false}
+            maxWidth="280px"
+          >
+            <MapPopup report={selected} />
+          </Popup>
+        )}
+      </MapGL>
+
+      {/* Controls overlay */}
+      <div className="absolute bottom-6 left-4 flex flex-col gap-2">
+        <div className="relative">
+          <MapFilter filters={filters} onChange={setFilters} />
         </div>
-      </APIProvider>
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-8 w-8 shadow-md"
+          onClick={handleRecenter}
+          title="Center on my location"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+          </svg>
+        </Button>
+      </div>
+
+      {/* CTA */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+        <Button size="lg" className="shadow-lg" onClick={onReportClick}>
+          <Plus className="mr-2 h-4 w-4" />
+          Report Issue Here
+        </Button>
+      </div>
     </div>
   );
 }
