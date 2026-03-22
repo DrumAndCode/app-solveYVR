@@ -86,7 +86,7 @@ export default function ReportDetailPage({
       <Separator />
 
       {/* Details */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-base">
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base sm:gap-x-6">
         <span className="text-muted-foreground">Location</span>
         <span>
           {titleCase(report.address)}, {report.local_area}
@@ -117,23 +117,23 @@ export default function ReportDetailPage({
       {/* Attachments */}
       <div className="flex flex-col gap-2">
         <h2 className="text-base font-medium">Attachments</h2>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {/* Placeholder photos */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-md bg-muted">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted">
             <ImageIcon className="h-6 w-6 text-muted-foreground" />
           </div>
-          <div className="flex h-20 w-20 items-center justify-center rounded-md bg-muted">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted">
             <ImageIcon className="h-6 w-6 text-muted-foreground" />
           </div>
           {/* Placeholder voice note */}
-          <div className="flex h-20 w-40 flex-col items-start justify-center gap-1 rounded-md bg-muted px-3">
+          <div className="flex h-20 w-40 min-w-0 flex-col items-start justify-center gap-1 rounded-md bg-muted px-3">
             <span className="text-base text-muted-foreground">Voice note</span>
-            <div className="flex items-center gap-2">
-              <Play className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="flex w-full items-center gap-2">
+              <Play className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <div className="h-1 flex-1 rounded-full bg-muted-foreground/20">
                 <div className="h-1 w-1/3 rounded-full bg-muted-foreground/50" />
               </div>
-              <span className="text-base text-muted-foreground">0:12</span>
+              <span className="text-base shrink-0 text-muted-foreground">0:12</span>
             </div>
           </div>
         </div>

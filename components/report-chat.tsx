@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, FormEvent } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, FormEvent } from "react";
 import {
   X,
   Camera,
@@ -12,6 +12,7 @@ import {
   Check,
   AlertCircle,
   Wrench,
+  RotateCcw,
 } from "lucide-react";
 import {
   Conversation,
@@ -55,9 +56,58 @@ interface UIMsg {
   toolCalls?: ToolStep[];
 }
 
-let msgId = 0;
+let msgId = Date.now();
 function nextId() {
   return String(++msgId);
+}
+
+const WELCOME_ID = "welcome";
+
+// ── LocalStorage persistence ───────────────────────────────────────
+
+const LS_MESSAGES_KEY = "solveyvr-chat-messages";
+const LS_HISTORY_KEY = "solveyvr-chat-history";
+
+function loadSavedMessages(): UIMsg[] | null {
+  try {
+    const raw = localStorage.getItem(LS_MESSAGES_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as UIMsg[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    // Re-key all messages to avoid collisions with new IDs
+    return parsed.map((m) => ({
+      ...m,
+      id: m.id === WELCOME_ID ? WELCOME_ID : nextId(),
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function loadSavedHistory(): ChatMessage[] | null {
+  try {
+    const raw = localStorage.getItem(LS_HISTORY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ChatMessage[];
+    if (!Array.isArray(parsed)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveChat(messages: UIMsg[], history: ChatMessage[]) {
+  try {
+    localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(messages));
+    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+}
+
+function clearSavedChat() {
+  localStorage.removeItem(LS_MESSAGES_KEY);
+  localStorage.removeItem(LS_HISTORY_KEY);
 }
 
 // ── Tool calls display ─────────────────────────────────────────────
@@ -103,13 +153,8 @@ function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
                 <span className="font-medium">{step.label}</span>
               </div>
               {step.detail && (
-                <p className="ml-[18px] text-[11px] text-muted-foreground">
+                <p className="ml-[18px] text-[11px] text-muted-foreground truncate max-w-full">
                   {step.detail}
-                </p>
-              )}
-              {step.resultSummary && (
-                <p className="ml-[18px] text-[11px] text-muted-foreground">
-                  → {step.resultSummary}
                 </p>
               )}
             </div>
@@ -125,15 +170,70 @@ function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
 const WELCOME_MESSAGE =
   "Hi! I'm here to help you report a city issue to Vancouver 311.\n\nWhat's going on? Just describe the problem in your own words.";
 
-export function ReportChat({ onClose }: { onClose: () => void }) {
-  const [messages, setMessages] = useState<UIMsg[]>([
-    { id: nextId(), role: "assistant", text: WELCOME_MESSAGE },
-  ]);
+export interface ReportChatProps {
+  onClose: () => void;
+  /** Pre-fill location context from a map pin click */
+  initialLocation?: { lat: number; lng: number; address?: string } | null;
+}
+
+export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
+  // If a location is provided and no saved chat exists, show a location-aware welcome
+  const welcomeText = useMemo(() => {
+    if (initialLocation?.address) {
+      return `Hi! I'm here to help you report a city issue to Vancouver 311.\n\n📍 **${initialLocation.address}**\n\nWhat's going on at this location?`;
+    }
+    return WELCOME_MESSAGE;
+  }, [initialLocation]);
+
+  const [messages, setMessages] = useState<UIMsg[]>(() => {
+    // If location was provided, start a fresh chat with location context (don't restore old)
+    if (initialLocation) {
+      clearSavedChat();
+      return [{ id: WELCOME_ID, role: "assistant", text: welcomeText }];
+    }
+    const saved = loadSavedMessages();
+    return saved ?? [{ id: WELCOME_ID, role: "assistant", text: WELCOME_MESSAGE }];
+  });
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   // Full conversation history sent to the backend (user + assistant only)
-  const historyRef = useRef<ChatMessage[]>([]);
+  const historyRef = useRef<ChatMessage[]>(
+    initialLocation ? [] : (loadSavedHistory() ?? [])
+  );
   const abortRef = useRef<AbortController | null>(null);
+
+  // When a location is provided, prepend it as context in the history
+  // so the agent knows where the user is reporting from
+  const didSendLocation = useRef(false);
+  useEffect(() => {
+    if (initialLocation && !didSendLocation.current) {
+      didSendLocation.current = true;
+      const locText = initialLocation.address
+        ? `The issue is at ${initialLocation.address} (lat: ${initialLocation.lat}, lng: ${initialLocation.lng}).`
+        : `The issue is at coordinates ${initialLocation.lat}, ${initialLocation.lng}.`;
+      historyRef.current = [
+        { role: "system", content: `User selected a location on the map: ${locText} Use this location for the report — don't ask for the address again.` },
+      ];
+    }
+  }, [initialLocation]);
+
+  // Persist chat to localStorage whenever messages change
+  useEffect(() => {
+    if (!streaming) {
+      saveChat(messages, historyRef.current);
+    }
+  }, [messages, streaming]);
+
+  // ── Clear / restart chat ──────────────────────────────────────
+
+  const handleClearChat = useCallback(() => {
+    abortRef.current?.abort();
+    clearSavedChat();
+    historyRef.current = [];
+    setMessages([{ id: WELCOME_ID, role: "assistant", text: WELCOME_MESSAGE }]);
+    setStreaming(false);
+    setInput("");
+  }, []);
 
   // ── Send a message to the agent ────────────────────────────────
 
@@ -293,12 +393,21 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
           <MapPin className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">Report an Issue</span>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-md p-1 hover:bg-muted"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleClearChat}
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="New chat"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 hover:bg-muted"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

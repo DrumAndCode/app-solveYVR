@@ -67,9 +67,9 @@ export default function ReportsPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Select value={area} onValueChange={(v) => setArea(v ?? "all")}>
-            <SelectTrigger className="h-8 w-[180px] text-base">
+            <SelectTrigger className="h-8 min-w-0 text-base sm:w-[180px]">
               <SelectValue placeholder="Area" />
             </SelectTrigger>
             <SelectContent>
@@ -83,7 +83,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={department} onValueChange={(v) => setDepartment(v ?? "all")}>
-            <SelectTrigger className="h-8 w-[220px] text-base">
+            <SelectTrigger className="h-8 min-w-0 text-base sm:w-[220px]">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +97,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={status} onValueChange={(v) => setStatus(v ?? "all")}>
-            <SelectTrigger className="h-8 w-[120px] text-base">
+            <SelectTrigger className="h-8 min-w-0 text-base sm:w-[120px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -108,7 +108,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={sort} onValueChange={(v) => setSort(v ?? "newest")}>
-            <SelectTrigger className="h-8 w-[120px] text-base">
+            <SelectTrigger className="h-8 min-w-0 text-base sm:w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

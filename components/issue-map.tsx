@@ -46,7 +46,8 @@ type PointProps = { report: Report };
 
 export function IssueMap() {
   const mapRef = useRef<MapRef>(null);
-  const { pendingFocus, clearFocus } = useMapFocus();
+  const { pendingFocus, clearFocus, userLocation } = useMapFocus();
+  const didCenterOnUser = useRef(false);
   const [selected, setSelected] = useState<Report | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: "all",
@@ -112,6 +113,18 @@ export function IssueMap() {
     [updateView]
   );
 
+  // Auto-center on user location once
+  useEffect(() => {
+    if (userLocation && !didCenterOnUser.current) {
+      didCenterOnUser.current = true;
+      mapRef.current?.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 14,
+        duration: 1000,
+      });
+    }
+  }, [userLocation]);
+
   useEffect(() => {
     if (pendingFocus) {
       mapRef.current?.flyTo({
@@ -169,7 +182,7 @@ export function IssueMap() {
         onLoad={updateView}
         onMoveEnd={onMove}
       >
-        <NavigationControl position="top-right" />
+        <NavigationControl position="top-left" />
 
         {clusters.map((feature) => {
           const [lng, lat] = feature.geometry.coordinates;
