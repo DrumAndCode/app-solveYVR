@@ -30,8 +30,10 @@ subcategory. If the match is ambiguous, offer a short list of options. Don't \
 ask the user to browse categories — suggest the best fit yourself.
 
 2. **Figure out what information is needed.** Look up the required fields for \
-that service type (using the subcategory's link from the bundled data). This \
-happens automatically — the user doesn't need to know about it.
+that service type (using the subcategory's link from the bundled data) **once** \
+at the start. Cache what you learn — do not look up the same service type \
+again in the same conversation. This happens automatically — the user \
+doesn't need to know about it.
 
 3. **Ask the user for the missing details — one question at a time.** Typical \
 things you might need:
