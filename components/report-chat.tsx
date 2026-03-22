@@ -59,6 +59,12 @@ interface Attachment {
   storageId?: string; // Convex storage ID for persistent access
 }
 
+interface Submission {
+  ref: string;
+  caseid?: string;
+  address?: string;
+}
+
 interface UIMsg {
   id: string;
   role: "assistant" | "user";
@@ -66,6 +72,7 @@ interface UIMsg {
   thinking?: string;
   toolCalls?: ToolStep[];
   attachments?: Attachment[];
+  submission?: Submission;
 }
 
 let msgId = Date.now();
@@ -178,6 +185,42 @@ function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Submission confirmation card ─────────────────────────────────────
+
+function SubmissionCard({ submission }: { submission: Submission }) {
+  return (
+    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 max-w-[90%]">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100">
+          <Check className="h-3.5 w-3.5 text-emerald-600" />
+        </div>
+        <span className="text-sm font-semibold text-emerald-900">Report Submitted</span>
+      </div>
+      <div className="flex flex-col gap-1.5 text-xs">
+        <div className="flex items-center justify-between rounded-md bg-white/70 px-3 py-2">
+          <span className="text-emerald-700">Reference</span>
+          <span className="font-mono font-semibold text-emerald-900">{submission.ref}</span>
+        </div>
+        {submission.caseid && (
+          <div className="flex items-center justify-between rounded-md bg-white/70 px-3 py-2">
+            <span className="text-emerald-700">Case ID</span>
+            <span className="font-mono text-emerald-900">{submission.caseid}</span>
+          </div>
+        )}
+        {submission.address && (
+          <div className="flex items-center justify-between rounded-md bg-white/70 px-3 py-2">
+            <span className="text-emerald-700">Location</span>
+            <span className="text-emerald-900 truncate ml-2 text-right">{submission.address}</span>
+          </div>
+        )}
+      </div>
+      <p className="mt-2 text-[11px] text-emerald-600">
+        Save your reference number to track this report.
+      </p>
     </div>
   );
 }
@@ -551,8 +594,25 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             break;
           }
 
-          case "thinking_step":
+          case "thinking_step": {
             currentThinking = event.label + "...";
+            // Detect successful submission and extract ref/caseid
+            let submission: Submission | undefined;
+            if (
+              event.name === "submit_request" &&
+              event.status === "ok" &&
+              event.result_summary
+            ) {
+              const refMatch = event.result_summary.match(/ref=(\S+)/);
+              const caseMatch = event.result_summary.match(/caseid=(\S+)/);
+              if (refMatch) {
+                submission = {
+                  ref: refMatch[1],
+                  caseid: caseMatch?.[1],
+                  address: initialLocation?.address || undefined,
+                };
+              }
+            }
             setMessages((prev) =>
               prev.map((m) => {
                 if (m.id !== currentMsgId) return m;
@@ -566,10 +626,16 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
                       }
                     : t
                 );
-                return { ...m, thinking: currentThinking, toolCalls: tools };
+                return {
+                  ...m,
+                  thinking: currentThinking,
+                  toolCalls: tools,
+                  ...(submission ? { submission } : {}),
+                };
               })
             );
             break;
+          }
 
           case "thinking_end":
             hadToolCalls = true;
@@ -739,6 +805,11 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
                 {/* Tool calls */}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
                   <ToolCallsDisplay steps={msg.toolCalls} />
+                )}
+
+                {/* Submission confirmation */}
+                {msg.submission && (
+                  <SubmissionCard submission={msg.submission} />
                 )}
 
                 {/* Thinking indicator */}

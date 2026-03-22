@@ -63,7 +63,15 @@ def _result_summary(name: str, raw: str) -> str:
             ok = d.get("ok")
             code = d.get("status_code", "")
             if ok:
-                return f"Submitted successfully (status {code})"
+                body = d.get("json", {})
+                ref = body.get("ref", "") if isinstance(body, dict) else ""
+                caseid = body.get("caseid", "") if isinstance(body, dict) else ""
+                parts = [f"Submitted successfully (status {code})"]
+                if ref:
+                    parts.append(f"ref={ref}")
+                if caseid:
+                    parts.append(f"caseid={caseid}")
+                return " ".join(parts)
             body = d.get("json") or d.get("text", "")
             if isinstance(body, dict):
                 body = json.dumps(body, ensure_ascii=False)
