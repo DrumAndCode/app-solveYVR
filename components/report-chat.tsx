@@ -10,7 +10,7 @@ import {
   Loader2,
   Check,
   AlertCircle,
-  RotateCcw,
+
   Square,
   FileIcon,
   Music,
@@ -682,21 +682,12 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
           <MapPin className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">Report an Issue</span>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleClearChat}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="New chat"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 hover:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => { handleClearChat(); onClose(); }}
+          className="rounded-md px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          Close & Restart
+        </button>
       </div>
 
       {/* Messages */}
