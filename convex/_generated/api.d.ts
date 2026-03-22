@@ -8,13 +8,19 @@
  * @module
  */
 
+import type * as ingest from "../ingest.js";
+import type * as publicIssues from "../publicIssues.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  ingest: typeof ingest;
+  publicIssues: typeof publicIssues;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
