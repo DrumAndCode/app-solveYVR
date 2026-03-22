@@ -69,7 +69,7 @@ export function MapFilter({
               </label>
               <Select
                 value={filters.area}
-                onValueChange={(v) => onChange({ ...filters, area: v })}
+                onValueChange={(v) => onChange({ ...filters, area: v ?? "all" })}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
@@ -91,7 +91,7 @@ export function MapFilter({
               </label>
               <Select
                 value={filters.department}
-                onValueChange={(v) => onChange({ ...filters, department: v })}
+                onValueChange={(v) => onChange({ ...filters, department: v ?? "all" })}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
@@ -113,7 +113,7 @@ export function MapFilter({
               </label>
               <Select
                 value={filters.status}
-                onValueChange={(v) => onChange({ ...filters, status: v })}
+                onValueChange={(v) => onChange({ ...filters, status: v ?? "all" })}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />

@@ -281,9 +281,12 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
                     you.
                   </p>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="text-xs" asChild>
-                      <a href="/my-reports">View in My Reports</a>
-                    </Button>
+                    <a
+                      href="/my-reports"
+                      className="inline-flex h-8 items-center rounded-md border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted"
+                    >
+                      View in My Reports
+                    </a>
                     <Button
                       size="sm"
                       variant="ghost"

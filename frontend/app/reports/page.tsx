@@ -68,7 +68,7 @@ export default function ReportsPage() {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Select value={area} onValueChange={setArea}>
+          <Select value={area} onValueChange={(v) => setArea(v ?? "all")}>
             <SelectTrigger className="h-8 w-[180px] text-xs">
               <SelectValue placeholder="Area" />
             </SelectTrigger>
@@ -82,7 +82,7 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={department} onValueChange={setDepartment}>
+          <Select value={department} onValueChange={(v) => setDepartment(v ?? "all")}>
             <SelectTrigger className="h-8 w-[220px] text-xs">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
@@ -96,7 +96,7 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={status} onValueChange={(v) => setStatus(v ?? "all")}>
             <SelectTrigger className="h-8 w-[120px] text-xs">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -107,7 +107,7 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={sort} onValueChange={setSort}>
+          <Select value={sort} onValueChange={(v) => setSort(v ?? "newest")}>
             <SelectTrigger className="h-8 w-[120px] text-xs">
               <SelectValue />
             </SelectTrigger>
