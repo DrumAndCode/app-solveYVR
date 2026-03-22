@@ -9,23 +9,27 @@ export interface LocationInfo {
   address?: string;
 }
 
+export interface Filters {
+  area: string;
+  department: string;
+  status: string;
+}
+
+const DEFAULT_FILTERS: Filters = { area: "all", department: "all", status: "all" };
+
 interface MapContextValue {
-  /** Call to fly the map to a report and select it */
   focusReport: (report: Report) => void;
-  /** The report the map should fly to (consumed by IssueMap) */
   pendingFocus: Report | null;
-  /** Clear after the map has consumed the focus */
   clearFocus: () => void;
 
-  /** User's current GPS location (requested on mount) */
   userLocation: LocationInfo | null;
 
-  /** Location selected for a new report (pin click → "Report here") */
   reportLocation: LocationInfo | null;
-  /** Trigger a report at a specific location — opens chat with location context */
   startReportAt: (loc: LocationInfo) => void;
-  /** Clear report location after chat has consumed it */
   clearReportLocation: () => void;
+
+  filters: Filters;
+  setFilters: (f: Filters) => void;
 }
 
 const MapContext = createContext<MapContextValue | null>(null);
@@ -34,6 +38,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const [pendingFocus, setPendingFocus] = useState<Report | null>(null);
   const [userLocation, setUserLocation] = useState<LocationInfo | null>(null);
   const [reportLocation, setReportLocation] = useState<LocationInfo | null>(null);
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const focusReport = useCallback((report: Report) => {
     setPendingFocus(report);
@@ -77,6 +82,8 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         reportLocation,
         startReportAt,
         clearReportLocation,
+        filters,
+        setFilters,
       }}
     >
       {children}

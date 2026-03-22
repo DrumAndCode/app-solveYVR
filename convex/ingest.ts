@@ -1,4 +1,4 @@
-import { action, internalMutation } from "./_generated/server";
+import { internalAction, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
@@ -8,6 +8,37 @@ const API_BASE =
 const PAGE_SIZE = 100;
 const BATCH_SIZE = 50;
 const DEFAULT_TARGET = 2000;
+
+const EXCLUDED_TYPE_PATTERNS = [
+  "business license",
+  "licence",
+  "license",
+];
+
+const VANCOUVER_BOUNDS = {
+  minLat: 49.19,
+  maxLat: 49.32,
+  minLng: -123.28,
+  maxLng: -123.01,
+};
+
+function isExcludedRecord(r: VancouverApiRecord): boolean {
+  const type = r.service_request_type?.toLowerCase() ?? "";
+  if (EXCLUDED_TYPE_PATTERNS.some((p) => type.includes(p))) return true;
+
+  if (r.latitude != null && r.longitude != null) {
+    if (
+      r.latitude < VANCOUVER_BOUNDS.minLat ||
+      r.latitude > VANCOUVER_BOUNDS.maxLat ||
+      r.longitude < VANCOUVER_BOUNDS.minLng ||
+      r.longitude > VANCOUVER_BOUNDS.maxLng
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 interface VancouverApiRecord {
   department: string;
@@ -83,7 +114,8 @@ async function fetchPage(
   offset: number,
   limit: number
 ): Promise<ApiResponse> {
-  const url = `${API_BASE}?limit=${limit}&offset=${offset}&order_by=service_request_open_timestamp+desc`;
+  const where = encodeURIComponent("latitude is not null");
+  const url = `${API_BASE}?limit=${limit}&offset=${offset}&order_by=service_request_open_timestamp+desc&where=${where}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(
@@ -93,7 +125,7 @@ async function fetchPage(
   return response.json();
 }
 
-export const sync = action({
+export const sync = internalAction({
   args: {
     targetCount: v.optional(v.number()),
   },
@@ -126,7 +158,11 @@ export const sync = action({
 
         const normalized = data.results
           .filter(
-            (r) => r.service_request_type && r.department && r.service_request_open_timestamp
+            (r) =>
+              r.service_request_type &&
+              r.department &&
+              r.service_request_open_timestamp &&
+              !isExcludedRecord(r)
           )
           .map(normalizeRecord);
 
@@ -283,5 +319,38 @@ export const finalizeRun = internalMutation({
       api_pages_fetched: args.apiPagesFetched,
       error_text: args.errorText,
     });
+  },
+});
+
+export const cleanupExcludedRecords = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("publicIssues").collect();
+    let deleted = 0;
+
+    for (const doc of all) {
+      const type = doc.service_request_type.toLowerCase();
+      const isExcludedType = EXCLUDED_TYPE_PATTERNS.some((p) =>
+        type.includes(p)
+      );
+
+      let isOutOfBounds = false;
+      if (doc.latitude != null && doc.longitude != null) {
+        isOutOfBounds =
+          doc.latitude < VANCOUVER_BOUNDS.minLat ||
+          doc.latitude > VANCOUVER_BOUNDS.maxLat ||
+          doc.longitude < VANCOUVER_BOUNDS.minLng ||
+          doc.longitude > VANCOUVER_BOUNDS.maxLng;
+      }
+
+      const hasNoLocation = doc.latitude == null || doc.longitude == null;
+
+      if (isExcludedType || isOutOfBounds || hasNoLocation) {
+        await ctx.db.delete(doc._id);
+        deleted++;
+      }
+    }
+
+    return { deleted };
   },
 });

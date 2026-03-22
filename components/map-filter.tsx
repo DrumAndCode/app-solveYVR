@@ -2,6 +2,8 @@
 
 import { SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -10,13 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { NEIGHBOURHOODS, DEPARTMENTS } from "@/lib/mock-data";
+import type { Filters } from "@/lib/map-context";
 
-export interface Filters {
-  area: string;
-  department: string;
-  status: string;
-}
+export type { Filters };
 
 const EMPTY: Filters = { area: "all", department: "all", status: "all" };
 
@@ -27,6 +25,9 @@ export function MapFilter({
   filters: Filters;
   onChange: (f: Filters) => void;
 }) {
+  const stats = useQuery(api.publicIssues.stats);
+  const neighbourhoods = stats?.localAreas ?? [];
+  const departments = stats?.departments ?? [];
   const [open, setOpen] = useState(false);
 
   const hasFilters =
@@ -76,7 +77,7 @@ export function MapFilter({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All areas</SelectItem>
-                  {NEIGHBOURHOODS.map((n) => (
+                  {neighbourhoods.map((n) => (
                     <SelectItem key={n} value={n}>
                       {n}
                     </SelectItem>
@@ -98,7 +99,7 @@ export function MapFilter({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All departments</SelectItem>
-                  {DEPARTMENTS.map((d) => (
+                  {departments.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>

@@ -4,7 +4,8 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ReportChat } from "@/components/report-chat";
 import { MapPin } from "lucide-react";
-import { mockReports } from "@/lib/mock-data";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useMapFocus, type LocationInfo } from "@/lib/map-context";
 
 function HomeContent() {
@@ -46,7 +47,8 @@ function HomeContent() {
     );
   }
 
-  const openCount = mockReports.filter((r) => r.status === "Open").length;
+  const stats = useQuery(api.publicIssues.stats);
+  const openCount = stats?.open ?? 0;
 
   return (
     <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-4 px-6 text-center">

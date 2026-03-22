@@ -81,13 +81,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={tab.href}
                 className={cn(
                   "relative px-3 py-2.5 text-sm transition-colors hover:text-foreground",
-                  pathname === tab.href
+                  (pathname === tab.href || (tab.href === "/reports" && pathname === "/"))
                     ? "text-foreground font-medium"
                     : "text-muted-foreground"
                 )}
               >
                 {tab.label}
-                {pathname === tab.href && (
+                {(pathname === tab.href || (tab.href === "/reports" && pathname === "/")) && (
                   <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-primary" />
                 )}
               </Link>

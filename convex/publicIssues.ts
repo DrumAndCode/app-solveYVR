@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 export const list = query({
@@ -7,10 +8,7 @@ export const list = query({
     local_area: v.optional(v.string()),
     department: v.optional(v.string()),
     service_request_type: v.optional(v.string()),
-    paginationOpts: v.object({
-      numItems: v.number(),
-      cursor: v.union(v.string(), v.null()),
-    }),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     const { status, local_area, department, service_request_type } = args;

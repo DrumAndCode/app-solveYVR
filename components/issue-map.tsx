@@ -11,11 +11,13 @@ import MapGL, {
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import Supercluster from "supercluster";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { MessageSquarePlus } from "lucide-react";
 import { MapPopup } from "@/components/map-popup";
-import { MapFilter, type Filters } from "@/components/map-filter";
-import { type Report, mockReports, VANCOUVER_CENTER } from "@/lib/mock-data";
+import { MapFilter } from "@/components/map-filter";
+import { type Report, toReport, VANCOUVER_CENTER } from "@/lib/mock-data";
 import { useMapFocus } from "@/lib/map-context";
 
 const MAP_STYLE: maplibregl.StyleSpecification = {
@@ -48,14 +50,15 @@ type PointProps = { report: Report };
 
 export function IssueMap() {
   const mapRef = useRef<MapRef>(null);
-  const { pendingFocus, clearFocus, userLocation, startReportAt } = useMapFocus();
+  const { pendingFocus, clearFocus, userLocation, startReportAt, filters, setFilters } = useMapFocus();
   const didCenterOnUser = useRef(false);
   const [selected, setSelected] = useState<Report | null>(null);
-  const [filters, setFilters] = useState<Filters>({
-    area: "all",
-    department: "all",
-    status: "all",
-  });
+
+  const rawIssues = useQuery(api.publicIssues.listForMap);
+  const allReports = useMemo(
+    () => (rawIssues ?? []).map(toReport),
+    [rawIssues]
+  );
   const [zoom, setZoom] = useState(12);
   const [bounds, setBounds] = useState<[number, number, number, number] | null>(
     null
@@ -121,14 +124,14 @@ export function IssueMap() {
   // ── Existing report pins ────────────────────────────────────────
 
   const filtered = useMemo(() => {
-    return mockReports.filter((r) => {
+    return allReports.filter((r) => {
       if (filters.area !== "all" && r.local_area !== filters.area) return false;
       if (filters.department !== "all" && r.department !== filters.department)
         return false;
       if (filters.status !== "all" && r.status !== filters.status) return false;
       return true;
     });
-  }, [filters]);
+  }, [allReports, filters]);
 
   const index = useMemo(() => {
     const sc = new Supercluster<PointProps>({
