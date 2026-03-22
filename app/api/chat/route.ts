@@ -9,11 +9,23 @@ const BACKEND_URL = process.env.AGENT_API_URL || "http://localhost:8000";
 export async function POST(request: Request) {
   const body = await request.json();
 
-  const upstream = await fetch(`${BACKEND_URL}/api/chat/stream`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${BACKEND_URL}/api/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Connection failed";
+    return new Response(
+      JSON.stringify({
+        error: `Could not reach agent server at ${BACKEND_URL}: ${message}. Is the Python server running?`,
+      }),
+      { status: 502, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   if (!upstream.ok) {
     const text = await upstream.text();
