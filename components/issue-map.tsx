@@ -73,7 +73,7 @@ export function IssueMap() {
   }, []);
 
   return (
-    <div className="relative flex-1">
+    <div className="absolute inset-0">
       <MapGL
         ref={mapRef}
         initialViewState={{

@@ -2,8 +2,6 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Nav } from "@/components/nav";
-import { IssueMap } from "@/components/issue-map";
 import { ReportChat } from "@/components/report-chat";
 
 function HomeContent() {
@@ -16,23 +14,21 @@ function HomeContent() {
     }
   }, [searchParams]);
 
-  return (
-    <>
-      <Nav onReportClick={() => setChatOpen(true)} />
-      <main className="flex flex-1 flex-col">
-        <div className="flex flex-1">
-          <div className={`flex flex-1 ${chatOpen ? "hidden md:flex" : ""}`}>
-            <IssueMap />
-          </div>
+  if (chatOpen) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <ReportChat onClose={() => setChatOpen(false)} />
+      </div>
+    );
+  }
 
-          {chatOpen && (
-            <div className="flex w-full flex-col border-l md:w-[420px] lg:w-[480px]">
-              <ReportChat onClose={() => setChatOpen(false)} />
-            </div>
-          )}
-        </div>
-      </main>
-    </>
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+      <h2 className="text-lg font-semibold">Welcome to SolveYVR</h2>
+      <p className="text-sm text-muted-foreground">
+        Report city issues in Vancouver. Click &ldquo;Report Issue&rdquo; to get started, or browse existing reports.
+      </p>
+    </div>
   );
 }
 

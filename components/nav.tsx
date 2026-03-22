@@ -24,19 +24,19 @@ export function Nav({ onReportClick }: { onReportClick?: () => void }) {
   }
 
   return (
-    <nav className="flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm">
+    <nav className="flex h-14 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm">
       <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
         <MapPin className="h-5 w-5 text-primary" />
         SolveYVR
       </Link>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3">
         {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
             className={cn(
-              "text-sm transition-colors hover:text-foreground",
+              "text-xs transition-colors hover:text-foreground",
               pathname === link.href
                 ? "text-foreground font-medium"
                 : "text-muted-foreground"
@@ -45,13 +45,10 @@ export function Nav({ onReportClick }: { onReportClick?: () => void }) {
             {link.label}
           </Link>
         ))}
-        <Button size="sm" onClick={handleReport}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Report Issue
+        <Button size="sm" onClick={handleReport} className="h-7 text-xs">
+          <Plus className="mr-1 h-3 w-3" />
+          Report
         </Button>
-        <button className="rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted">
-          Sign In
-        </button>
       </div>
     </nav>
   );
