@@ -14,7 +14,7 @@ export default function MyReportsPage() {
       <p className="text-sm text-muted-foreground max-w-[260px]">
         Reports you submit through the chat will appear here.
       </p>
-      <Button size="sm" render={<Link href="/" />}>
+      <Button size="sm" nativeButton={false} render={<Link href="/" />}>
         Report a new issue
       </Button>
     </div>
