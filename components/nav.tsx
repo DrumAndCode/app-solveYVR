@@ -36,9 +36,9 @@ const features = [
 ];
 
 const steps = [
-  { num: "1", text: 'Tap "+ Report" above' },
+  { num: "1", text: "Tap the blue pin on the map" },
   { num: "2", text: "Describe the issue via chat" },
-  { num: "3", text: "We pin it on the map" },
+  { num: "3", text: "We submit it to the city" },
 ];
 
 export function Nav() {
