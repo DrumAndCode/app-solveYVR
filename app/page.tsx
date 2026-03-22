@@ -30,16 +30,30 @@ function HomeContent() {
 
   if (chatOpen) {
     return (
-      <div className="absolute inset-0 flex flex-col">
-        <ReportChat
-          key={chatKey}
-          onClose={() => {
-            setChatOpen(false);
-            setChatLocation(null);
-          }}
-          initialLocation={chatLocation}
-        />
-      </div>
+      <>
+        {/* Mobile: fixed fullscreen overlay above everything */}
+        <div className="fixed inset-0 z-50 flex flex-col bg-background md:hidden">
+          <ReportChat
+            key={chatKey}
+            onClose={() => {
+              setChatOpen(false);
+              setChatLocation(null);
+            }}
+            initialLocation={chatLocation}
+          />
+        </div>
+        {/* Desktop: fits within the panel */}
+        <div className="absolute inset-0 hidden flex-col md:flex">
+          <ReportChat
+            key={chatKey}
+            onClose={() => {
+              setChatOpen(false);
+              setChatLocation(null);
+            }}
+            initialLocation={chatLocation}
+          />
+        </div>
+      </>
     );
   }
 
