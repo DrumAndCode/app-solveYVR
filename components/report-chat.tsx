@@ -553,11 +553,19 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
     let fullText = "";
     let currentThinking = "";
     let hadToolCalls = false;
+    let postToolTimer: ReturnType<typeof setTimeout> | null = null;
+    let gotDeltaAfterTools = false;
 
     try {
       for await (const event of streamChat(historyRef.current, controller.signal)) {
         switch (event.type) {
           case "delta":
+            // Clear post-tool thinking timer
+            if (postToolTimer) {
+              clearTimeout(postToolTimer);
+              postToolTimer = null;
+            }
+            gotDeltaAfterTools = true;
             // If we just finished tool calls, start a new message for the reply
             if (hadToolCalls) {
               hadToolCalls = false;
@@ -648,11 +656,22 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
 
           case "thinking_end":
             hadToolCalls = true;
+            gotDeltaAfterTools = false;
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === currentMsgId ? { ...m, thinking: undefined } : m
               )
             );
+            // Show "Thinking..." if no delta arrives within 1.5s
+            postToolTimer = setTimeout(() => {
+              if (!gotDeltaAfterTools) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === currentMsgId ? { ...m, thinking: "Thinking..." } : m
+                  )
+                );
+              }
+            }, 1500);
             break;
 
           case "done":
@@ -693,6 +712,7 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
         );
       }
     } finally {
+      if (postToolTimer) clearTimeout(postToolTimer);
       setStreaming(false);
       abortRef.current = null;
     }
