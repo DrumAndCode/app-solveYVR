@@ -49,7 +49,7 @@ function HomeContent() {
   const openCount = mockReports.filter((r) => r.status === "Open").length;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
         <MapPin className="h-7 w-7 text-primary" />
       </div>
