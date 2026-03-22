@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop: floating right pane */}
-      <div className="relative z-10 ml-auto hidden h-full md:flex md:m-6 md:h-[calc(100%-3rem)] md:w-[420px] md:shrink-0 md:flex-col md:overflow-hidden md:rounded-2xl md:bg-background md:shadow-md lg:w-[480px]">
+      <div className="relative z-10 hidden h-full md:flex md:my-6 md:mr-6 md:ml-auto md:h-[calc(100%-3rem)] md:w-[420px] md:shrink-0 md:flex-col md:overflow-hidden md:rounded-2xl md:bg-background md:shadow-md lg:w-[480px]">
         <Nav />
         <div className="flex shrink-0 items-center border-b px-4">
           <div className="flex flex-1">
