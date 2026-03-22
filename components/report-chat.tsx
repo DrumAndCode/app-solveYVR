@@ -594,11 +594,15 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             }));
             currentThinking = event.steps.map((s) => s.label).join(", ") + "...";
             setMessages((prev) =>
-              prev.map((m) =>
-                m.id === currentMsgId
-                  ? { ...m, thinking: currentThinking, toolCalls: [...(m.toolCalls || []), ...steps] }
-                  : m
-              )
+              prev.map((m) => {
+                if (m.id !== currentMsgId) return m;
+                const existing = m.toolCalls || [];
+                // Skip steps that already exist (completed in a prior round)
+                const newSteps = steps.filter(
+                  (s) => !existing.some((e) => e.name === s.name && e.status !== "running")
+                );
+                return { ...m, thinking: currentThinking, toolCalls: [...existing, ...newSteps] };
+              })
             );
             break;
           }
