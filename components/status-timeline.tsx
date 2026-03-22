@@ -27,13 +27,13 @@ export function StatusTimeline({ events }: { events: TimelineEvent[] }) {
           {/* Content */}
           <div className="flex flex-col gap-0.5 pb-4">
             <div className="flex items-baseline gap-2">
-              <span className="text-xs font-medium">{event.date}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-base font-medium">{event.date}</span>
+              <span className="text-base text-muted-foreground">
                 {event.label}
               </span>
             </div>
             {event.detail && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-base text-muted-foreground">
                 {event.detail}
               </span>
             )}

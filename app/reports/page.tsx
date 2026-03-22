@@ -69,7 +69,7 @@ export default function ReportsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={area} onValueChange={(v) => setArea(v ?? "all")}>
-            <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectTrigger className="h-8 w-[180px] text-base">
               <SelectValue placeholder="Area" />
             </SelectTrigger>
             <SelectContent>
@@ -83,7 +83,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={department} onValueChange={(v) => setDepartment(v ?? "all")}>
-            <SelectTrigger className="h-8 w-[220px] text-xs">
+            <SelectTrigger className="h-8 w-[220px] text-base">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +97,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={status} onValueChange={(v) => setStatus(v ?? "all")}>
-            <SelectTrigger className="h-8 w-[120px] text-xs">
+            <SelectTrigger className="h-8 w-[120px] text-base">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -108,7 +108,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={sort} onValueChange={(v) => setSort(v ?? "newest")}>
-            <SelectTrigger className="h-8 w-[120px] text-xs">
+            <SelectTrigger className="h-8 w-[120px] text-base">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -121,7 +121,7 @@ export default function ReportsPage() {
 
       {/* Results */}
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">
+        <span className="text-base text-muted-foreground">
           {filtered.length} report{filtered.length !== 1 && "s"}
         </span>
         <div className="flex flex-col gap-2">
@@ -141,14 +141,14 @@ export default function ReportsPage() {
         )}
 
         {filtered.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
+          <div className="py-12 text-center text-base text-muted-foreground">
             No reports match your filters.
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="border-t pt-4 text-center text-xs text-muted-foreground">
+      <div className="border-t pt-4 text-center text-base text-muted-foreground">
         Data from Vancouver Open Data &middot; Updated monthly
       </div>
     </div>

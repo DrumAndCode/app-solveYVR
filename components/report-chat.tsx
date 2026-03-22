@@ -202,7 +202,7 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Report an Issue</span>
+          <span className="text-base font-semibold">Report an Issue</span>
         </div>
         <button
           onClick={onClose}
@@ -221,7 +221,7 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
               {msg.content && (
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                    "max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-relaxed",
                     msg.role === "assistant"
                       ? "self-start bg-muted"
                       : "self-end bg-primary text-primary-foreground"
@@ -243,7 +243,7 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
               {step === "processing" &&
                 msg === messages[messages.length - 1] &&
                 msg.role === "assistant" && (
-                  <div className="flex items-center gap-2 self-start px-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 self-start px-2 text-base text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Classifying issue...
                   </div>
@@ -268,29 +268,29 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
                 <div className="flex flex-col gap-3 self-start rounded-2xl bg-emerald-50 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">&#10003;</span>
-                    <span className="text-sm font-semibold text-emerald-800">
+                    <span className="text-base font-semibold text-emerald-800">
                       Report submitted!
                     </span>
                   </div>
-                  <div className="flex flex-col gap-1 text-xs text-emerald-700">
+                  <div className="flex flex-col gap-1 text-base text-emerald-700">
                     <p>Emailed to 311@vancouver.ca</p>
                     <p>Reference: #SYV-00248</p>
                   </div>
-                  <p className="text-xs text-emerald-600">
+                  <p className="text-base text-emerald-600">
                     We&apos;ll check for status updates from the city and notify
                     you.
                   </p>
                   <div className="flex gap-2">
                     <a
                       href="/my-reports"
-                      className="inline-flex h-8 items-center rounded-md border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted"
+                      className="inline-flex h-8 items-center rounded-md border bg-background px-3 text-base font-medium transition-colors hover:bg-muted"
                     >
                       View in My Reports
                     </a>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-xs"
+                      className="text-base"
                       onClick={onClose}
                     >
                       Done
@@ -306,7 +306,7 @@ export function ReportChat({ onClose }: { onClose: () => void }) {
                     <button
                       key={s}
                       onClick={() => handleSuggestion(s)}
-                      className="rounded-full border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
+                      className="rounded-full border bg-background px-3 py-1.5 text-base transition-colors hover:bg-muted"
                     >
                       {s}
                     </button>

@@ -28,28 +28,28 @@ export function ReportPreview({
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="flex flex-col gap-3 p-4">
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="text-base font-medium uppercase tracking-wider text-muted-foreground">
           Report Preview
         </div>
 
         <div className="flex flex-col gap-1">
-          <div className="text-sm font-semibold">{category}</div>
-          <div className="text-xs text-muted-foreground">{department}</div>
-          <div className="text-xs text-muted-foreground">{address}</div>
+          <div className="text-base font-semibold">{category}</div>
+          <div className="text-base text-muted-foreground">{department}</div>
+          <div className="text-base text-muted-foreground">{address}</div>
         </div>
 
         <div className="relative">
           {editing ? (
             <div className="flex flex-col gap-2">
               <textarea
-                className="min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className="min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-base"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
               <Button
                 size="sm"
                 variant="ghost"
-                className="self-end text-xs"
+                className="self-end text-base"
                 onClick={() => setEditing(false)}
               >
                 <Check className="mr-1 h-3 w-3" />
@@ -58,7 +58,7 @@ export function ReportPreview({
             </div>
           ) : (
             <div className="group">
-              <p className="text-sm leading-relaxed">{description}</p>
+              <p className="text-base leading-relaxed">{description}</p>
               <button
                 className="absolute -right-1 -top-1 rounded-md p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted"
                 onClick={() => setEditing(true)}

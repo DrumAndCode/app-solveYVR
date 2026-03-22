@@ -36,7 +36,7 @@ export function Nav({ onReportClick }: { onReportClick?: () => void }) {
             key={link.href}
             href={link.href}
             className={cn(
-              "text-xs transition-colors hover:text-foreground",
+              "text-base transition-colors hover:text-foreground",
               pathname === link.href
                 ? "text-foreground font-medium"
                 : "text-muted-foreground"
@@ -45,7 +45,7 @@ export function Nav({ onReportClick }: { onReportClick?: () => void }) {
             {link.label}
           </Link>
         ))}
-        <Button size="sm" onClick={handleReport} className="h-7 text-xs">
+        <Button size="sm" onClick={handleReport} className="h-7 text-base">
           <Plus className="mr-1 h-3 w-3" />
           Report
         </Button>

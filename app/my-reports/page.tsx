@@ -21,20 +21,20 @@ export default function MyReportsPage() {
           >
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">
+                <span className="text-base font-semibold">
                   {report.service_request_type}
                 </span>
                 <StatusBadge status={report.status} />
               </div>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-base text-muted-foreground">
                 {report.address} &middot; {report.local_area}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-base text-muted-foreground">
                 {report.department} &middot; Submitted {formatDate(report.date)}
                 {report.close_date &&
                   ` · Resolved ${formatDate(report.close_date)}`}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-base text-muted-foreground">
                 Ref: #{report.ref}
               </span>
             </div>
@@ -44,7 +44,7 @@ export default function MyReportsPage() {
       </div>
 
       {myReports.length === 0 && (
-        <div className="py-12 text-center text-sm text-muted-foreground">
+        <div className="py-12 text-center text-base text-muted-foreground">
           No reports yet. Go to the map to report an issue.
         </div>
       )}
