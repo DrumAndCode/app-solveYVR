@@ -423,13 +423,15 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
             </div>
           )}
 
-          {messages.map((msg) => (
+          {messages.map((msg, idx) => {
+            const isStreaming = streaming && idx === messages.length - 1 && msg.role === "assistant";
+            return (
             <div key={msg.id} className="flex flex-col gap-2">
               {/* Text content */}
               {msg.text && (
                 <Message from={msg.role}>
                   <MessageContent>
-                    <MessageResponse>{msg.text}</MessageResponse>
+                    <MessageResponse mode={isStreaming ? "streaming" : "static"}>{msg.text}</MessageResponse>
                   </MessageContent>
                 </Message>
               )}
@@ -459,7 +461,8 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
                   </div>
                 )}
             </div>
-          ))}
+          );
+          })}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
