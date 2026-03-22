@@ -40,6 +40,7 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { streamChat, type ChatMessage } from "@/lib/chat-stream";
+import { saveSubmittedReport } from "@/lib/submitted-reports";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -611,6 +612,14 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
                   caseid: caseMatch?.[1],
                   address: initialLocation?.address || undefined,
                 };
+                // Persist to My Reports
+                saveSubmittedReport({
+                  id: refMatch[1],
+                  ref: refMatch[1],
+                  caseid: caseMatch?.[1],
+                  address: initialLocation?.address || undefined,
+                  submittedAt: Date.now(),
+                });
               }
             }
             setMessages((prev) =>
