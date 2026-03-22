@@ -8,10 +8,8 @@ import {
   Paperclip,
   MapPin,
   Loader2,
-  ChevronDown,
   Check,
   AlertCircle,
-  Wrench,
   RotateCcw,
 } from "lucide-react";
 import {
@@ -113,31 +111,9 @@ function clearSavedChat() {
 // ── Tool calls display ─────────────────────────────────────────────
 
 function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const allDone = steps.every((s) => s.status !== "running");
-  const label = allDone
-    ? `Used ${steps.length} tool${steps.length > 1 ? "s" : ""}`
-    : `Running ${steps.filter((s) => s.status === "running").length} tool${steps.filter((s) => s.status === "running").length > 1 ? "s" : ""}...`;
-
   return (
     <div className="flex flex-col gap-1 pl-1">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-      >
-        {allDone ? (
-          <Wrench className="h-3 w-3" />
-        ) : (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        )}
-        <span>{label}</span>
-        <ChevronDown
-          className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {expanded && (
-        <div className="ml-1 flex flex-col gap-1 border-l-2 border-muted pl-3 pt-1">
+        <div className="ml-1 flex flex-col gap-1 border-l-2 border-muted pl-3">
           {steps.map((step, i) => (
             <div key={`${step.name}-${i}`} className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5 text-xs">
@@ -160,7 +136,6 @@ function ToolCallsDisplay({ steps }: { steps: ToolStep[] }) {
             </div>
           ))}
         </div>
-      )}
     </div>
   );
 }
