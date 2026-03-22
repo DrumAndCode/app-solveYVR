@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import math
+import ssl
 from typing import Any
 
+import certifi
 from geopy.geocoders import Nominatim
 
 from .registry import ToolRegistry
@@ -22,7 +24,8 @@ def _to_web_mercator(lat: float, lng: float) -> tuple[float, float]:
 def register_geocode_tools(registry: ToolRegistry) -> None:
     """Register `geocode_address`: street address → coordinates for Van311 POST fields."""
 
-    geocoder = Nominatim(user_agent="solveyvr-agent/0.1", timeout=10)
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    geocoder = Nominatim(user_agent="solveyvr-agent/0.1", timeout=10, ssl_context=ctx)
 
     def geocode_address(address: str) -> str:
         if not address or not address.strip():
