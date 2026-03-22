@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: "SolveYVR — Report City Issues in Vancouver",
   description:
     "AI-powered civic issue reporting for Vancouver. Record a video, AI writes the report, city gets notified.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    interactiveWidget: "resizes-visual",
+  },
 };
 
 export default function RootLayout({

@@ -104,7 +104,7 @@ function MobileSheet({ children }: { children: React.ReactNode }) {
         "absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl bg-background shadow-[0_-4px_20px_rgba(0,0,0,0.1)]",
         !dragging && "transition-[height] duration-200 ease-out"
       )}
-      style={{ height: `${sheetHeight}vh` }}
+      style={{ height: `${sheetHeight}dvh` }}
     >
       {/* Drag handle */}
       <div
