@@ -1,24 +1,17 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Search, X, ArrowUpDown } from "lucide-react";
+import { Search, X, ArrowUpDown, ChevronDown } from "lucide-react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ReportCard } from "@/components/report-card";
 import { toReport } from "@/lib/mock-data";
 import { useMapFocus } from "@/lib/map-context";
 
 const STATUS_OPTIONS = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All statuses" },
   { value: "Open", label: "Open" },
   { value: "Closed", label: "Closed" },
 ] as const;
@@ -27,6 +20,8 @@ export default function ReportsPage() {
   const { filters, setFilters } = useMapFocus();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
+  const [showAreas, setShowAreas] = useState(false);
+  const [showDepts, setShowDepts] = useState(false);
 
   const stats = useQuery(api.publicIssues.stats);
   const neighbourhoods = stats?.localAreas ?? [];
@@ -80,7 +75,7 @@ export default function ReportsPage() {
   const isLoading = results === undefined;
 
   return (
-    <div className="flex w-full flex-col gap-4 px-4 py-4">
+    <div className="flex w-full flex-col gap-3 px-4 py-4">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -100,13 +95,13 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {/* Status toggle pills */}
+      {/* Status */}
       <div className="flex items-center gap-1.5">
         {STATUS_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => setFilters({ ...filters, status: opt.value })}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               filters.status === opt.value
                 ? "bg-foreground text-background"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -117,69 +112,111 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {/* Dropdowns row */}
-      <div className="flex items-center gap-2">
-        <Select
-          value={filters.area}
-          onValueChange={(v) => setFilters({ ...filters, area: v ?? "all" })}
-        >
-          <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
-            <SelectValue placeholder="Area" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All areas</SelectItem>
-            {neighbourhoods.map((n) => (
-              <SelectItem key={n} value={n}>
-                {n}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.department}
-          onValueChange={(v) =>
-            setFilters({ ...filters, department: v ?? "all" })
-          }
-        >
-          <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
-            <SelectValue placeholder="Department" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All departments</SelectItem>
-            {departments.map((d) => (
-              <SelectItem key={d} value={d}>
-                {d}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
+      {/* Area picker */}
+      <div className="flex flex-col gap-1.5">
         <button
-          onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
-          className="flex h-8 shrink-0 items-center gap-1 rounded-md border bg-background px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          onClick={() => { setShowAreas(!showAreas); setShowDepts(false); }}
+          className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted/50"
         >
-          <ArrowUpDown className="h-3 w-3" />
-          {sort === "newest" ? "New" : "Old"}
+          <span className={filters.area === "all" ? "text-muted-foreground" : "font-medium"}>
+            {filters.area === "all" ? "All areas" : filters.area}
+          </span>
+          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showAreas ? "rotate-180" : ""}`} />
         </button>
+        {showAreas && (
+          <div className="flex flex-wrap gap-1.5 rounded-lg border bg-muted/20 p-2.5">
+            <button
+              onClick={() => { setFilters({ ...filters, area: "all" }); setShowAreas(false); }}
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                filters.area === "all"
+                  ? "bg-foreground text-background"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              All areas
+            </button>
+            {neighbourhoods.map((n) => (
+              <button
+                key={n}
+                onClick={() => { setFilters({ ...filters, area: n }); setShowAreas(false); }}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                  filters.area === n
+                    ? "bg-foreground text-background"
+                    : "bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Results header */}
+      {/* Department picker */}
+      <div className="flex flex-col gap-1.5">
+        <button
+          onClick={() => { setShowDepts(!showDepts); setShowAreas(false); }}
+          className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+        >
+          <span className={filters.department === "all" ? "text-muted-foreground" : "font-medium"}>
+            {filters.department === "all" ? "All departments" : filters.department}
+          </span>
+          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showDepts ? "rotate-180" : ""}`} />
+        </button>
+        {showDepts && (
+          <div className="flex flex-wrap gap-1.5 rounded-lg border bg-muted/20 p-2.5">
+            <button
+              onClick={() => { setFilters({ ...filters, department: "all" }); setShowDepts(false); }}
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                filters.department === "all"
+                  ? "bg-foreground text-background"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              All departments
+            </button>
+            {departments.map((d) => (
+              <button
+                key={d}
+                onClick={() => { setFilters({ ...filters, department: d }); setShowDepts(false); }}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                  filters.department === d
+                    ? "bg-foreground text-background"
+                    : "bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sort + results count */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
           {isLoading
             ? "Loading..."
             : `${filtered.length} report${filtered.length !== 1 ? "s" : ""}`}
         </span>
-        {activeFilterCount > 0 && (
+        <div className="flex items-center gap-3">
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearAll}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+              Clear
+            </button>
+          )}
           <button
-            onClick={clearAll}
+            onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <X className="h-3 w-3" />
-            Clear filters
+            <ArrowUpDown className="h-3 w-3" />
+            {sort === "newest" ? "Newest first" : "Oldest first"}
           </button>
-        )}
+        </div>
       </div>
 
       {/* Results */}
