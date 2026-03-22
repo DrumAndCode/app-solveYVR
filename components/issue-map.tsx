@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import MapGL, {
   Marker,
-  Popup,
   NavigationControl,
   type MapRef,
   type ViewStateChangeEvent,
@@ -218,39 +217,37 @@ export function IssueMap() {
                 setSelected(report);
               }}
             >
-              <div className="flex cursor-pointer flex-col items-center transition-transform hover:scale-110">
-                <div
-                  className={`h-5 w-5 rounded-full border-[2.5px] border-white shadow-lg ${
-                    report.status === "Open"
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
-                  }`}
+              <svg
+                className="cursor-pointer drop-shadow-lg transition-transform hover:scale-110"
+                width="28"
+                height="36"
+                viewBox="0 0 28 36"
+                fill="none"
+              >
+                <path
+                  d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z"
+                  fill={report.status === "Open" ? "#f59e0b" : "#10b981"}
                 />
-                <div
-                  className={`-mt-[3px] h-2 w-2 rotate-45 border-b-[2.5px] border-r-[2.5px] border-white ${
-                    report.status === "Open"
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
-                  }`}
-                />
-              </div>
+                <circle cx="14" cy="14" r="6" fill="white" />
+              </svg>
             </Marker>
           );
         })}
 
         {/* Popup */}
         {selected && (
-          <Popup
+          <Marker
             longitude={selected.lng}
             latitude={selected.lat}
             anchor="bottom"
-            onClose={() => setSelected(null)}
-            closeOnClick={false}
-            maxWidth="280px"
-            offset={24}
+            offset={[0, -40]}
+            style={{ zIndex: 10 }}
           >
-            <MapPopup report={selected} />
-          </Popup>
+            <MapPopup
+              report={selected}
+              onClose={() => setSelected(null)}
+            />
+          </Marker>
         )}
       </MapGL>
 

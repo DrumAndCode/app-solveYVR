@@ -6,7 +6,7 @@ export function StatusBadge({ status }: { status: "Open" | "Closed" }) {
     <Badge
       variant="outline"
       className={cn(
-        "gap-1 text-base font-medium",
+        "gap-1 text-xs font-medium",
         status === "Open"
           ? "border-amber-300 bg-amber-50 text-amber-700"
           : "border-emerald-300 bg-emerald-50 text-emerald-700"

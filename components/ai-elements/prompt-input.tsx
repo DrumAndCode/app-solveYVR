@@ -1142,7 +1142,13 @@ export const PromptInputButton = ({
 
   return (
     <Tooltip>
-      <TooltipTrigger>{button}</TooltipTrigger>
+      <TooltipTrigger render={<InputGroupButton
+        className={cn(className)}
+        size={newSize}
+        type="button"
+        variant={variant}
+        {...props}
+      />} />
       <TooltipContent side={side}>
         {tooltipContent}
         {shortcut && (
