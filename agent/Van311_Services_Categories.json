@@ -1,0 +1,217 @@
+{
+  "source": "https://van311.ca/services",
+  "last_updated": "2026-03-22",
+  "categories": [
+    {
+      "name": "Animals",
+      "anchor_link": "https://van311.ca/services#c_el_animals",
+      "subcategories": [
+        {"name": "Animal Services question", "link": "https://van311.ca/services/animal-services-question"},
+        {"name": "Dead animal pick up", "link": "https://van311.ca/services/dead-animal-pick-up"},
+        {"name": "Dog licence", "link": "https://van311.ca/services/dog-licence-question"},
+        {"name": "Pets (dogs, chickens)", "link": "https://van311.ca/services/pets"},
+        {"name": "Report my lost pet", "link": "https://van311.ca/services/lost-pet"},
+        {"name": "Wildlife (birds, coyotes, raccoons)", "link": "https://van311.ca/services/wildlife"}
+      ]
+    },
+    {
+      "name": "Building, development, and construction",
+      "anchor_link": "https://van311.ca/services#c_el_building_-development_-and-construction",
+      "subcategories": [
+        {"name": "Application for a patio on private property", "link": "https://van311.ca/services/business-patio-question"},
+        {"name": "Building and development questions and applications", "link": "https://van311.ca/services/building-development-question"},
+        {"name": "Construction concern", "link": "https://van311.ca/services/construction-concern"},
+        {"name": "Request a property public view assessment", "link": "https://van311.ca/services/public-view-assessment"},
+        {"name": "Tenant Improvement Program applications", "link": "https://van311.ca/services/tip-applications"},
+        {"name": "Vancouver Building By-law question", "link": "https://van311.ca/services/vancouver-building-bylaw-question"}
+      ]
+    },
+    {
+      "name": "Business and licensing",
+      "anchor_link": "https://van311.ca/services#c_el_business-and-licensing",
+      "subcategories": [
+        {"name": "Business licence questions and applications", "link": "https://van311.ca/services/business-licence-question"},
+        {"name": "Business licence: Change of use", "link": "https://van311.ca/services/business-licence-change-of-use"},
+        {"name": "Business support request", "link": "https://van311.ca/services/business-support-request"},
+        {"name": "Filming and special events (block parties, parades, and more)", "link": "https://van311.ca/services/filming-and-special-events"}
+      ]
+    },
+    {
+      "name": "Feedback",
+      "anchor_link": "https://van311.ca/services#c_el_feedback",
+      "subcategories": [
+        {"name": "General feedback", "link": "https://van311.ca/services/general-feedback"},
+        {"name": "Mayor and Council feedback", "link": "https://van311.ca/services/mayor-and-council-feedback"},
+        {"name": "Public hearing feedback", "link": "https://van311.ca/services/public-hearing-feedback"},
+        {"name": "Report accessibility concerns", "link": "https://van311.ca/services/report-accessibility-concerns"},
+        {"name": "Van311 app feedback", "link": "https://van311.ca/services/van311-feedback"},
+        {"name": "Website feedback", "link": "https://van311.ca/services/website-feedback"}
+      ]
+    },
+    {
+      "name": "Fire and safety",
+      "anchor_link": "https://van311.ca/services#c_el_fire-and-safety",
+      "subcategories": [
+        {"name": "Fire reinspection", "link": "https://van311.ca/services/fire-reinspection"},
+        {"name": "Fire safety hazards in common areas of a multi-unit or commercial building", "link": "https://van311.ca/services/fire-safety-hazards"},
+        {"name": "Fireworks", "link": "https://van311.ca/services/fireworks"},
+        {"name": "Hoarding", "link": "https://van311.ca/services/hoarding"},
+        {"name": "Lockbox question", "link": "https://van311.ca/services/lockbox-question"},
+        {"name": "Security alarm question", "link": "https://van311.ca/services/security-alarm-question"}
+      ]
+    },
+    {
+      "name": "Garbage, recycling, and litter",
+      "anchor_link": "https://van311.ca/services#c_el_garbage_-recycling_-and-litter",
+      "subcategories": [
+        {"name": "Abandoned garbage", "link": "https://van311.ca/services/abandoned-garbage"},
+        {"name": "Commercial waste bin", "link": "https://van311.ca/services/commercial-waste-bin"},
+        {"name": "Feces clean up", "link": "https://van311.ca/services/feces-clean-up"},
+        {"name": "Illegal dumping", "link": "https://van311.ca/services/illegal-dumping2"},
+        {"name": "Manage my existing bins", "link": "https://van311.ca/services/garbage-or-green-bin-request"},
+        {"name": "Missed waste bin", "link": "https://van311.ca/services/report-a-missed-collection"},
+        {"name": "Needle clean up", "link": "https://van311.ca/services/needle-clean-up"},
+        {"name": "Single-use item by-law", "link": "https://van311.ca/services/single-use-item-by-law"},
+        {"name": "Start or end bin service", "link": "https://van311.ca/services/start-or-end-bin-service"},
+        {"name": "Street and park litter cans", "link": "https://van311.ca/services/litter-cans"},
+        {"name": "Street cleaning and debris pick up", "link": "https://van311.ca/services/street-cleaning-and-debris-pickup"},
+        {"name": "Street litter monitoring", "link": "https://van311.ca/services/loose-litter-clean-up"}
+      ]
+    },
+    {
+      "name": "Government and elections",
+      "anchor_link": "https://van311.ca/services#c_el_government-and-elections",
+      "subcategories": [
+        {"name": "Election question", "link": "https://van311.ca/services/election-question"},
+        {"name": "Election sign concern", "link": "https://van311.ca/services/election-sign-concern"}
+      ]
+    },
+    {
+      "name": "Graffiti",
+      "anchor_link": "https://van311.ca/services#c_el_graffiti",
+      "subcategories": [
+        {"name": "Free paint voucher request", "link": "https://van311.ca/services/free-paint-voucher-request"},
+        {"name": "Graffiti and poster removal", "link": "https://van311.ca/services/graffiti-clean-up"}
+      ]
+    },
+    {
+      "name": "Lights, signals, and signs",
+      "anchor_link": "https://van311.ca/services#c_el_lights_-signals_-and-signs",
+      "subcategories": [
+        {"name": "Signs", "link": "https://van311.ca/services/signs"},
+        {"name": "Street lighting and lamps", "link": "https://van311.ca/services/street-lights"},
+        {"name": "Traffic signals (including pedestrian and bike signals)", "link": "https://van311.ca/services/traffic-and-pedestrian-signal"},
+        {"name": "Utility box damage (street lights and traffic signals)", "link": "https://van311.ca/services/utility-box-damage"}
+      ]
+    },
+    {
+      "name": "Noise",
+      "anchor_link": "https://van311.ca/services#c_el_noise",
+      "subcategories": [
+        {"name": "Noise concern (construction, events, businesses)", "link": "https://van311.ca/services/noise"}
+      ]
+    },
+    {
+      "name": "Parks and recreation",
+      "anchor_link": "https://van311.ca/services#c_el_parks-and-recreation",
+      "subcategories": [
+        {"name": "Enjoying parks and facilities", "link": "https://van311.ca/services/enjoying-parks-and-facilities"},
+        {"name": "Fees, refunds, rentals, filming and events", "link": "https://van311.ca/services/fees-rentals-filming-and-events"},
+        {"name": "Park Board Commissioner feedback", "link": "https://van311.ca/services/park-board-feedback"},
+        {"name": "Parks and recreation feedback", "link": "https://van311.ca/services/parks-and-recreation-feedback"},
+        {"name": "Report a park issue", "link": "https://van311.ca/services/report-a-park-issue"}
+      ]
+    },
+    {
+      "name": "Property",
+      "anchor_link": "https://van311.ca/services#c_el_property",
+      "subcategories": [
+        {"name": "Empty home report", "link": "https://van311.ca/services/empty-home-report"},
+        {"name": "Private property concern", "link": "https://van311.ca/services/private-property-concern"},
+        {"name": "Private property question", "link": "https://van311.ca/services/private-property-general-inquiry"},
+        {"name": "Short-term rental", "link": "https://van311.ca/services/short-term-rental2"}
+      ]
+    },
+    {
+      "name": "Snow and ice",
+      "anchor_link": "https://van311.ca/services#c_el_snow-and-ice",
+      "subcategories": [
+        {"name": "Sidewalk not cleared of snow and ice by-law violation", "link": "https://van311.ca/services/sidewalk-snow-and-ice-by-law-violation"},
+        {"name": "Snow and ice removal from City property", "link": "https://van311.ca/services/snow-and-ice-removal-from-city-property"}
+      ]
+    },
+    {
+      "name": "Storm event",
+      "anchor_link": "https://van311.ca/services#c_el_storm-event",
+      "subcategories": [
+        {"name": "Storm (flooding, snow, wind)", "link": "https://van311.ca/services/storm"}
+      ]
+    },
+    {
+      "name": "Streets, transportation, and parking",
+      "anchor_link": "https://van311.ca/services#c_el_streets_-transportation_-and-parking",
+      "subcategories": [
+        {"name": "Abandoned bike", "link": "https://van311.ca/services/abandoned-bike"},
+        {"name": "Abandoned dinghy or water vessel", "link": "https://van311.ca/services/abandoned-dinghy-or-water-vessel"},
+        {"name": "Abandoned vehicle", "link": "https://van311.ca/services/abandoned-or-uninsured-vehicle"},
+        {"name": "Broken parking meter", "link": "https://van311.ca/services/report-a-broken-parking-meter"},
+        {"name": "City infrastructure maintenance (sidewalks, streets, bridges and more)", "link": "https://van311.ca/services/city-infrastructure-maintenance"},
+        {"name": "Cycling and micromobility", "link": "https://van311.ca/services/cycling-and-micromobility"},
+        {"name": "Encampments and needles", "link": "https://van311.ca/services/encampments-and-needles"},
+        {"name": "Gastown public spaces", "link": "https://van311.ca/services/gastown-public-spaces"},
+        {"name": "Local improvement program question", "link": "https://van311.ca/services/local-improvement-program-request"},
+        {"name": "Moving or storage container", "link": "https://van311.ca/services/moving-or-storage-container"},
+        {"name": "Newspaper box", "link": "https://van311.ca/services/newspaper-box"},
+        {"name": "Parking", "link": "https://van311.ca/services/parking"},
+        {"name": "Parking enforcement", "link": "https://van311.ca/services/parking-enforcement"},
+        {"name": "Pavement markings", "link": "https://van311.ca/services/pavement-markings"},
+        {"name": "Pothole", "link": "https://van311.ca/services/pothole"},
+        {"name": "Street furniture (bus shelter, bench)", "link": "https://van311.ca/services/street-furniture"},
+        {"name": "Street or sidewalk (cracks, broken curbs, and more)", "link": "https://van311.ca/services/street-or-sidewalk"},
+        {"name": "Street or sidewalk retail use (vending, etc.)", "link": "https://van311.ca/services/street-or-sidewalk-use"},
+        {"name": "Traffic calming request on residential street", "link": "https://van311.ca/services/traffic-calming-request-on-residential-street"},
+        {"name": "Transit", "link": "https://van311.ca/services/transit2"},
+        {"name": "Truck traffic", "link": "https://van311.ca/services/truck-traffic"},
+        {"name": "Walking and accessibility", "link": "https://van311.ca/services/walking-and-accessibility"}
+      ]
+    },
+    {
+      "name": "Trees and vegetation",
+      "anchor_link": "https://van311.ca/services#c_el_trees-and-vegetation",
+      "subcategories": [
+        {"name": "Boulevard (damage, pests)", "link": "https://van311.ca/services/boulevard"},
+        {"name": "Landscape planning question", "link": "https://van311.ca/services/landscape-planning-question"},
+        {"name": "Pests", "link": "https://van311.ca/services/pests"},
+        {"name": "Tree removal on private property", "link": "https://van311.ca/services/tree-removal-on-private-property"},
+        {"name": "Trees, bushes, and other vegetation", "link": "https://van311.ca/services/trees-and-bushes-on-city-property"}
+      ]
+    },
+    {
+      "name": "Water, sewers, and environment",
+      "anchor_link": "https://van311.ca/services#c_el_water_-sewers_-and-environment",
+      "subcategories": [
+        {"name": "Catch basins and street flooding", "link": "https://van311.ca/services/catch-basins-and-street-flooding"},
+        {"name": "Community science inspection: Post-rain", "link": "https://van311.ca/services/post-rain-inspections"},
+        {"name": "Community science inspection: wet weather", "link": "https://van311.ca/services/wet-weather-inspection"},
+        {"name": "Drinking fountains, hand washing stations, and misting stations", "link": "https://van311.ca/services/drinking-fountains-hand-washing-stations-and-misting-stations"},
+        {"name": "Drinking water quality or pressure", "link": "https://van311.ca/services/water-quality-or-pressure"},
+        {"name": "Fire hydrant", "link": "https://van311.ca/services/fire-hydrant"},
+        {"name": "High water consumption", "link": "https://van311.ca/services/high-water"},
+        {"name": "Sewer maintenance hole", "link": "https://van311.ca/services/sewer-maintenance-hole"},
+        {"name": "Sustainability question", "link": "https://van311.ca/services/sustainability-question"},
+        {"name": "Water leak", "link": "https://van311.ca/services/water-leak"},
+        {"name": "Water meter reading request", "link": "https://van311.ca/services/water-meter-reading-request"},
+        {"name": "Water service line or valve", "link": "https://van311.ca/services/water-service-line-or-valve"}
+      ]
+    }
+  ],
+  "most_popular": [
+    {"name": "Abandoned garbage", "link": "https://van311.ca/services/abandoned-garbage"},
+    {"name": "Abandoned vehicle", "link": "https://van311.ca/services/abandoned-or-uninsured-vehicle"},
+    {"name": "Cycling and micromobility", "link": "https://van311.ca/services/cycling-and-micromobility"},
+    {"name": "Parking enforcement", "link": "https://van311.ca/services/parking-enforcement"},
+    {"name": "Pothole", "link": "https://van311.ca/services/pothole"},
+    {"name": "Street lighting and lamps", "link": "https://van311.ca/services/street-lights"},
+    {"name": "Missed waste bin", "link": "https://van311.ca/services/report-a-missed-collection"}
+  ]
+}
