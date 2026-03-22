@@ -23,22 +23,21 @@ An open-source, AI-powered civic issue reporting app for Vancouver. Report city 
 ## Tech Stack
 
 ### Frontend
-- **React** — UI framework
+- **Next.js 16** (App Router) — React framework
+- **React 19** — UI framework
+- **Tailwind CSS 4** — Styling with OKLch design tokens
 - **shadcn/ui** — Component library
-- **Mapbox GL JS** — Interactive map for displaying issues
-- **MediaRecorder API** — In-browser video and audio recording
+- **MapLibre GL** + **react-map-gl** — Interactive map with clustering (Supercluster)
+- **Vercel AI SDK** — Chat streaming primitives
 
 ### Backend
-- **Python / FastAPI** — API server
-- **FFmpeg** — Video processing, keyframe extraction, audio extraction
-- **OpenAI Whisper API** — Speech-to-text for voice notes
-- **Claude Vision / OpenAI Vision** — Image classification from video frames
-- **Resend** — Email delivery for report submission
+- **Python / FastAPI** — AI agent server with SSE streaming
+- **OpenRouter** — LLM gateway (GPT-4o-mini default, configurable)
+- **Geopy** — Reverse geocoding for report locations
 
-### Data & Auth
-- **Convex** — Real-time database, file storage, backend functions
-- **Clerk** — Authentication (email, Google, phone OTP)
-- **Vancouver Open Data API** — Existing 311 service request data (Opendatasoft v2.1)
+### Data
+- **Convex** — Real-time database and backend functions
+- **Vancouver Open Data API** — Existing 311 service request data
 
 ## Architecture
 
@@ -137,111 +136,117 @@ Arbutus Ridge, Downtown, Dunbar-Southlands, Fairview, Grandview-Woodland, Hastin
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 18+
-- FFmpeg installed (`brew install ffmpeg` on macOS)
-- API keys for: OpenAI (Whisper + Vision) or Anthropic (Claude Vision), Mapbox, Resend, Clerk
+- **Node.js 18+**
+- **Python 3.11+**
+- An [OpenRouter](https://openrouter.ai/) API key (powers the AI chat agent)
+- A [Convex](https://convex.dev) account (free tier works)
 
 ### Environment Variables
 
-```bash
-# .env (backend)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-MAPBOX_ACCESS_TOKEN=pk...
-RESEND_API_KEY=re_...
-CONVEX_URL=https://...convex.cloud
-VAN311_RECIPIENT_EMAIL=311@vancouver.ca
+Create a `.env` file in the project root:
 
-# .env.local (frontend)
-VITE_CLERK_PUBLISHABLE_KEY=pk_...
-VITE_CONVEX_URL=https://...convex.cloud
-VITE_MAPBOX_ACCESS_TOKEN=pk...
-VITE_API_URL=http://localhost:8000
+```bash
+# .env — Python agent server
+OPENROUTER_API_KEY=sk-or-...          # Required
+OPENROUTER_MODEL=openai/gpt-4o-mini  # Optional, this is the default
+PARALLEL_API_KEY=...                  # Optional, for Parallel Extract tool
+```
+
+Create a `.env.local` file in the project root (used by Next.js and Convex):
+
+```bash
+# .env.local — Next.js + Convex
+CONVEX_DEPLOYMENT=dev:your-deployment  # Set by `npx convex dev`
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+AGENT_API_URL=http://localhost:8000    # Optional, defaults to this
 ```
 
 ### Installation
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/van311-reporter.git
-cd van311-reporter
+git clone https://github.com/YashSerai/SolveYVR.git
+cd SolveYVR
 
-# Backend
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Frontend
-cd ../frontend
+# Install frontend dependencies
 npm install
 
-# Convex
-npx convex dev
+# Install Python dependencies
+pip install -r requirements.txt
 ```
 
 ### Running Locally
 
+You need **three terminals** running simultaneously:
+
 ```bash
-# Terminal 1 — Backend
-cd backend
-uvicorn main:app --reload --port 8000
+# Terminal 1 — Python agent server (FastAPI)
+uvicorn server.main:app --reload --port 8000
+```
 
-# Terminal 2 — Frontend
-cd frontend
-npm run dev
-
-# Terminal 3 — Convex
-cd frontend
+```bash
+# Terminal 2 — Convex backend (real-time database)
 npx convex dev
 ```
+
+```bash
+# Terminal 3 — Next.js frontend
+npm run dev
+```
+
+The app will be available at **http://localhost:3000**.
+
+The Next.js frontend proxies chat requests to the Python server via `/api/chat/` route, so the browser never talks to port 8000 directly.
+
+### How the pieces connect
+
+1. **Next.js** (`npm run dev`) serves the frontend on port 3000
+2. **Convex** (`npx convex dev`) provides the real-time database for issues and reports
+3. **Python/FastAPI** (`uvicorn server.main:app`) runs the AI chat agent that classifies issues, geocodes locations, and drafts reports via OpenRouter
 
 ## Project Structure
 
 ```
-van311-reporter/
-├── backend/
-│   ├── main.py                 # FastAPI app entry point
-│   ├── routers/
-│   │   ├── reports.py          # /api/process-report, /api/submit-report
-│   │   └── issues.py           # /api/existing-issues (Vancouver Open Data proxy)
-│   ├── services/
-│   │   ├── video.py            # FFmpeg keyframe + audio extraction
-│   │   ├── transcription.py    # Whisper speech-to-text
-│   │   ├── classification.py   # Vision AI issue classification
-│   │   ├── geocoding.py        # Mapbox reverse geocoding
-│   │   └── email.py            # Resend email submission
-│   ├── models/
-│   │   └── schemas.py          # Pydantic request/response models
-│   ├── config.py               # Environment config
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── VideoRecorder.tsx    # Video capture (≤60s)
-│   │   │   ├── VoiceRecorder.tsx    # Voice note recording
-│   │   │   ├── ReportPreview.tsx    # AI-generated report preview
-│   │   │   ├── IssueMap.tsx         # Mapbox map with issue pins
-│   │   │   ├── IssueFeed.tsx        # Grid of existing issues
-│   │   │   ├── IssueCard.tsx        # Individual issue card
-│   │   │   ├── StatusBadge.tsx      # Open/Resolved status indicator
-│   │   │   └── ReportHistory.tsx    # User's submitted reports
-│   │   ├── pages/
-│   │   │   ├── Home.tsx             # Landing + issue feed + map
-│   │   │   ├── Report.tsx           # Record video + voice → submit
-│   │   │   └── Dashboard.tsx        # User's reports + status tracking
-│   │   ├── lib/
-│   │   │   ├── api.ts              # FastAPI client
-│   │   │   └── convex.ts           # Convex client setup
-│   │   └── App.tsx
-│   ├── convex/
-│   │   ├── schema.ts               # Convex database schema
-│   │   ├── reports.ts              # Report mutations + queries
-│   │   ├── users.ts                # User profile functions
-│   │   └── auth.config.ts          # Clerk integration config
-│   ├── package.json
-│   └── vite.config.ts
+SolveYVR/
+├── app/                        # Next.js App Router pages
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Home — welcome screen + report chat
+│   ├── reports/page.tsx        # All reports with filters
+│   ├── my-reports/page.tsx     # User's submitted reports
+│   ├── my-reports/[id]/page.tsx # Report detail view
+│   └── api/chat/route.ts      # Proxy to Python agent server
+├── components/                 # React components
+│   ├── app-shell.tsx           # Main layout — map + floating panel
+│   ├── nav.tsx                 # Top navigation bar
+│   ├── report-chat.tsx         # AI chat interface for reporting
+│   ├── issue-map.tsx           # MapLibre map with clustered pins
+│   ├── map-filter.tsx          # Map filter controls
+│   ├── map-popup.tsx           # Map pin popup
+│   ├── report-card.tsx         # Report list item
+│   ├── status-badge.tsx        # Open/Closed badge
+│   ├── status-timeline.tsx     # Report status timeline
+│   ├── ai-elements/            # Chat UI primitives
+│   └── ui/                     # shadcn component library
+├── server/
+│   └── main.py                 # FastAPI server — /api/chat/stream SSE endpoint
+├── agent/                      # Python AI agent
+│   ├── config.py               # OpenRouter config from env
+│   ├── prompts.py              # System prompt + Van311 categories
+│   ├── loop.py                 # Agent tool-calling loop
+│   ├── streaming.py            # SSE streaming for agent events
+│   ├── types.py                # Type definitions
+│   └── tools/                  # Agent tools (geocode, HTTP, parallel)
+├── convex/                     # Convex backend
+│   ├── schema.ts               # Database schema
+│   ├── publicIssues.ts         # Public issue queries
+│   └── ingest.ts               # Data ingestion
+├── lib/                        # Frontend utilities
+│   ├── map-context.tsx         # Map state context provider
+│   ├── chat-stream.ts          # SSE chat streaming client
+│   ├── mock-data.ts            # Development mock data
+│   └── utils.ts                # Helpers (cn, etc.)
+├── requirements.txt            # Python dependencies
+├── package.json                # Node.js dependencies
 └── README.md
 ```
 
