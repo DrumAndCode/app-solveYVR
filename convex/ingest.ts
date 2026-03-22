@@ -162,6 +162,8 @@ export const sync = internalAction({
               r.service_request_type &&
               r.department &&
               r.service_request_open_timestamp &&
+              r.address &&
+              r.address.trim() !== "" &&
               !isExcludedRecord(r)
           )
           .map(normalizeRecord);
@@ -344,8 +346,9 @@ export const cleanupExcludedRecords = internalMutation({
       }
 
       const hasNoLocation = doc.latitude == null || doc.longitude == null;
+      const hasNoAddress = !doc.address || doc.address.trim() === "";
 
-      if (isExcludedType || isOutOfBounds || hasNoLocation) {
+      if (isExcludedType || isOutOfBounds || hasNoLocation || hasNoAddress) {
         await ctx.db.delete(doc._id);
         deleted++;
       }

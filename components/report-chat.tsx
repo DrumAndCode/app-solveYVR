@@ -12,10 +12,11 @@ import {
   AlertCircle,
   RotateCcw,
   Square,
-  Image as ImageIcon,
   FileIcon,
   Music,
 } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import {
   Conversation,
   ConversationContent,
@@ -54,7 +55,8 @@ interface Attachment {
   id: string;
   name: string;
   type: string; // MIME
-  url: string; // blob or data URL
+  url: string; // blob or data URL (empty after reload from localStorage)
+  storageId?: string; // Convex storage ID for persistent access
 }
 
 interface UIMsg {
@@ -72,6 +74,25 @@ function nextId() {
 }
 
 const WELCOME_ID = "welcome";
+
+const ANON_ID_KEY = "solveyvr-anon-id";
+function getAnonUserId(): string {
+  let id = localStorage.getItem(ANON_ID_KEY);
+  if (!id) {
+    id = `anon-${crypto.randomUUID()}`;
+    localStorage.setItem(ANON_ID_KEY, id);
+  }
+  return id;
+}
+
+function getAttachmentKind(
+  mimeType?: string
+): "image" | "video" | "audio" | "file" {
+  if (mimeType?.startsWith("image/")) return "image";
+  if (mimeType?.startsWith("video/")) return "video";
+  if (mimeType?.startsWith("audio/")) return "audio";
+  return "file";
+}
 
 // ── LocalStorage persistence ───────────────────────────────────────
 
@@ -107,7 +128,14 @@ function loadSavedHistory(): ChatMessage[] | null {
 
 function saveChat(messages: UIMsg[], history: ChatMessage[]) {
   try {
-    localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(messages));
+    const serializable = messages.map((m) => ({
+      ...m,
+      attachments: m.attachments?.map((a) => ({
+        ...a,
+        url: "", // strip large data/blob URLs — images reload via storageId
+      })),
+    }));
+    localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(serializable));
     localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
   } catch {
     // Storage full or unavailable
@@ -287,24 +315,68 @@ function VoiceButton() {
   );
 }
 
+// ── Image component that resolves Convex storageId ──────────────────
+
+function StorageImage({ storageId, alt }: { storageId: string; alt: string }) {
+  const url = useQuery(api.attachments.getUrl, { storageId });
+  if (!url) {
+    return <div className="h-20 w-20 animate-pulse rounded-lg bg-muted" />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt={alt}
+      className="max-h-48 max-w-[240px] rounded-lg object-cover"
+    />
+  );
+}
+
 // ── Message attachment display ──────────────────────────────────────
 
 function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
   return (
-    <div className="flex flex-wrap gap-1.5 mt-1">
+    <div className="flex flex-wrap gap-2 mt-2">
       {attachments.map((att) => {
         const isImage = att.type.startsWith("image/");
         const isAudio = att.type.startsWith("audio/");
+
+        if (isImage) {
+          if (att.url) {
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={att.id}
+                src={att.url}
+                alt={att.name}
+                className="max-h-48 max-w-[240px] rounded-lg object-cover"
+              />
+            );
+          }
+          if (att.storageId) {
+            return (
+              <StorageImage
+                key={att.id}
+                storageId={att.storageId}
+                alt={att.name}
+              />
+            );
+          }
+        }
+
         return (
-          <div key={att.id} className="flex items-center gap-1.5 rounded-md border bg-muted/30 px-2 py-1 text-xs">
-            {isImage ? (
-              <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-            ) : isAudio ? (
+          <div
+            key={att.id}
+            className="flex items-center gap-1.5 rounded-md border bg-muted/30 px-2 py-1 text-xs"
+          >
+            {isAudio ? (
               <Music className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
               <FileIcon className="h-3.5 w-3.5 text-muted-foreground" />
             )}
-            <span className="max-w-[120px] truncate text-muted-foreground">{att.name}</span>
+            <span className="max-w-[120px] truncate text-muted-foreground">
+              {att.name}
+            </span>
           </div>
         );
       })}
@@ -323,6 +395,9 @@ export interface ReportChatProps {
 }
 
 export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
+  const generateUploadUrl = useMutation(api.attachments.generateUploadUrl);
+  const createAttachment = useMutation(api.attachments.create);
+
   const welcomeText = useMemo(() => {
     if (initialLocation?.address) {
       return `Hi! I'm here to help you report a city issue to Vancouver 311.\n\n📍 **${initialLocation.address}**\n\nWhat's going on at this location?`;
@@ -344,6 +419,42 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
     initialLocation ? [] : (loadSavedHistory() ?? [])
   );
   const abortRef = useRef<AbortController | null>(null);
+
+  const uploadFileToConvex = useCallback(
+    async (fileUrl: string, mimeType: string, filename: string, attachmentLocalId: string) => {
+      try {
+        const uploadUrl = await generateUploadUrl();
+        const blob = await fetch(fileUrl).then((r) => r.blob());
+        const result = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": mimeType || "application/octet-stream" },
+          body: blob,
+        });
+        const { storageId } = await result.json();
+
+        await createAttachment({
+          user_id: getAnonUserId(),
+          storage_id: storageId,
+          kind: getAttachmentKind(mimeType),
+          mime_type: mimeType || undefined,
+          filename: filename || undefined,
+          size_bytes: blob.size,
+        });
+
+        setMessages((prev) =>
+          prev.map((m) => ({
+            ...m,
+            attachments: m.attachments?.map((a) =>
+              a.id === attachmentLocalId ? { ...a, storageId } : a
+            ),
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to upload attachment:", err);
+      }
+    },
+    [generateUploadUrl, createAttachment]
+  );
 
   // When a location is provided, inject it as system context
   const didSendLocation = useRef(false);
@@ -521,7 +632,6 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
       if ((!text && !hasFiles) || streaming) return;
       setInput("");
 
-      // Build attachment metadata for display
       const atts: Attachment[] = message.files.map((f) => ({
         id: nextId(),
         name: f.filename || "file",
@@ -529,7 +639,16 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
         url: f.url,
       }));
 
-      // Build the text to send to the agent (describe attachments)
+      // Upload files to Convex storage in the background
+      for (const [i, file] of message.files.entries()) {
+        uploadFileToConvex(
+          file.url,
+          file.mediaType || "application/octet-stream",
+          file.filename || "file",
+          atts[i].id
+        );
+      }
+
       let agentText = text;
       if (atts.length > 0) {
         const fileDesc = atts
@@ -544,7 +663,7 @@ export function ReportChat({ onClose, initialLocation }: ReportChatProps) {
 
       sendToAgent(agentText, atts.length > 0 ? atts : undefined);
     },
-    [streaming, sendToAgent]
+    [streaming, sendToAgent, uploadFileToConvex]
   );
 
   // ── Handle stop ────────────────────────────────────────────────
