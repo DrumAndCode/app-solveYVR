@@ -6,10 +6,13 @@ import { ReportChat } from "@/components/report-chat";
 import { Button } from "@/components/ui/button";
 import { MapPin, Plus } from "lucide-react";
 import { mockReports } from "@/lib/mock-data";
+import { useMapFocus, type LocationInfo } from "@/lib/map-context";
 
 function HomeContent() {
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatLocation, setChatLocation] = useState<LocationInfo | null>(null);
   const searchParams = useSearchParams();
+  const { reportLocation, clearReportLocation } = useMapFocus();
 
   useEffect(() => {
     if (searchParams.get("report") === "1") {
@@ -17,10 +20,25 @@ function HomeContent() {
     }
   }, [searchParams]);
 
+  // When a pin's "Report an issue here" is clicked, open chat with that location
+  useEffect(() => {
+    if (reportLocation) {
+      setChatLocation(reportLocation);
+      setChatOpen(true);
+      clearReportLocation();
+    }
+  }, [reportLocation, clearReportLocation]);
+
   if (chatOpen) {
     return (
-      <div className="flex flex-1 flex-col">
-        <ReportChat onClose={() => setChatOpen(false)} />
+      <div className="absolute inset-0 flex flex-col">
+        <ReportChat
+          onClose={() => {
+            setChatOpen(false);
+            setChatLocation(null);
+          }}
+          initialLocation={chatLocation}
+        />
       </div>
     );
   }
